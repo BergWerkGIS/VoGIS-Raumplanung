@@ -20,14 +20,17 @@
  ***************************************************************************/
 """
 
-from PyQt4 import QtCore, QtGui
+from PyQt4.QtCore import *
+from PyQt4.QtGui import QDialog
 from ui_vogisraumplanungplot import Ui_VoGISRaumplanungPlot
-# create the dialog for zoom to point
 
 
-class VoGISRaumplanungPlotDialog(QtGui.QDialog):
-    def __init__(self):
-        QtGui.QDialog.__init__(self)
+class VoGISRaumplanungPlotDialog(QDialog):
+
+    def __init__(self, iface):
+        self.iface = iface
+
+        QDialog.__init__(self)
         # Set up the user interface from Designer.
         self.ui = Ui_VoGISRaumplanungPlot()
         self.ui.setupUi(self)

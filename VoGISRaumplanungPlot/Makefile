@@ -1,13 +1,13 @@
 #/***************************************************************************
 # VoGISRaumplanungPlot
-# 
+#
 # Create Plots
 #                             -------------------
 #        begin                : 2013-12-15
 #        copyright            : (C) 2013 by BergWerk GIS
 #        email                : wb@BergWerk-GIS.at
 # ***************************************************************************/
-# 
+#
 #/***************************************************************************
 # *                                                                         *
 # *   This program is free software; you can redistribute it and/or modify  *
@@ -22,22 +22,34 @@ PLUGIN_UPLOAD = $(CURDIR)/plugin_upload.py
 
 QGISDIR=.qgis2
 
-# Makefile for a PyQGIS plugin 
+# Makefile for a PyQGIS plugin
 
 # translation
-SOURCES = vogisraumplanungplot.py ui_vogisraumplanungplot.py __init__.py vogisraumplanungplotdialog.py
+SOURCES = vogisraumplanungplot.py \
+          ui_vogisraumplanungplot.py \
+          ui_vogisraumplanungplotsettings.py \
+          __init__.py \
+          vogisraumplanungplotdialog.py
 #TRANSLATIONS = i18n/vogisraumplanungplot_en.ts
-TRANSLATIONS = 
+TRANSLATIONS =
 
 # global
 
 PLUGINNAME = vogisraumplanungplot
 
-PY_FILES = vogisraumplanungplot.py vogisraumplanungplotdialog.py __init__.py
+PY_FILES = vogisraumplanungplot.py \
+           vogisraumplanungplotdialog.py \
+           vogisraumplanungplotsettingsdialog.py \
+           __init__.py
+
+CORE_FILES = vrpcore/__init__.py \
+             vrpcore/constvals.py \
+             vrpcore/vrpsettings.py
 
 EXTRAS = icon.png metadata.txt
 
-UI_FILES = ui_vogisraumplanungplot.py
+UI_FILES = ui_vogisraumplanungplot.py \
+           ui_vogisraumplanungplotsettings.py
 
 RESOURCE_FILES = resources_rc.py
 
@@ -61,7 +73,10 @@ compile: $(UI_FILES) $(RESOURCE_FILES)
 # $HOME/$(QGISDIR)/python/plugins
 deploy: compile doc transcompile
 	mkdir -p $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
+	mkdir -p $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)/vrpcore
+
 	cp -vf $(PY_FILES) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
+	cp -vf $(CORE_FILES) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)/vrpcore
 	cp -vf $(UI_FILES) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
 	cp -vf $(RESOURCE_FILES) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
 	cp -vf $(EXTRAS) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
@@ -80,12 +95,12 @@ derase:
 
 # The zip target deploys the plugin and creates a zip file with the deployed
 # content. You can then upload the zip file on http://plugins.qgis.org
-zip: deploy dclean 
-	rm -f $(PLUGINNAME).zip
-	cd $(HOME)/$(QGISDIR)/python/plugins; zip -9r $(CURDIR)/$(PLUGINNAME).zip $(PLUGINNAME)
+zip: deploy dclean
+	rm -f ../$(PLUGINNAME).zip
+	cd $(HOME)/$(QGISDIR)/python/plugins; zip -9r $(CURDIR)/../$(PLUGINNAME).zip $(PLUGINNAME)
 
-# Create a zip package of the plugin named $(PLUGINNAME).zip. 
-# This requires use of git (your plugin development directory must be a 
+# Create a zip package of the plugin named $(PLUGINNAME).zip.
+# This requires use of git (your plugin development directory must be a
 # git repository).
 # To use, pass a valid commit or tag as follows:
 #   make package VERSION=Version_0.3.2
@@ -115,5 +130,5 @@ clean:
 	rm $(UI_FILES) $(RESOURCE_FILES)
 
 # build documentation with sphinx
-doc: 
+doc:
 	cd help; make html

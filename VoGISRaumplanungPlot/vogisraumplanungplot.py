@@ -5,8 +5,8 @@
                                  A QGIS plugin
  Create Plots
                               -------------------
-        begin                : 2013-12-15
-        copyright            : (C) 2013 by BergWerk GIS
+        begin                : 2013-10-01
+        copyright            : (C) 2014 by BergWerk GIS
         email                : wb@BergWerk-GIS.at
  ***************************************************************************/
 
@@ -19,15 +19,15 @@
  *                                                                         *
  ***************************************************************************/
 """
-# Import the PyQt and QGIS libraries
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from qgis.core import *
-# Initialize Qt resources from file resources.py
 import resources_rc
-# Import the code for the dialog
 from vogisraumplanungplotdialog import VoGISRaumplanungPlotDialog
+from vogisraumplanungplotsettingsdialog import VoGISRaumplanungPlotSettingsDialog
 import os.path
+from vrpcore.vrpsettings import VRPSettings
+from vrpcore.constvals import *
 
 
 class VoGISRaumplanungPlot:
@@ -49,34 +49,44 @@ class VoGISRaumplanungPlot:
                 QCoreApplication.installTranslator(self.translator)
 
         # Create the dialog (after translation) and keep reference
-        self.dlg = VoGISRaumplanungPlotDialog()
+        self.dlg = VoGISRaumplanungPlotDialog(self.iface)
 
     def initGui(self):
-        # Create action that will start plugin configuration
         #http://www.iconarchive.com/show/build-icons-by-umar123/0045-Map-icon.html
-        self.action = QAction(
-            QIcon(":/plugins/vogisraumplanungplot/icon.png"),
-            u"VoGIS Plot", self.iface.mainWindow())
-        # connect the action to the run method
+        self.action = QAction( QIcon(":/plugins/vogisraumplanungplot/icon.png"), u"VoGIS Plot", self.iface.mainWindow())
         self.action.triggered.connect(self.run)
-
-        # Add toolbar button and menu item
         self.iface.addToolBarIcon(self.action)
         self.iface.addPluginToMenu(u"&VoGIS Raumplanung", self.action)
+
+        self.action_settings = QAction( QIcon(":/plugins/vogisraumplanungplot/icon.png"), u"VoGIS Plot Einstelllungen", self.iface.mainWindow())
+        self.action_settings.triggered.connect(self.settings)
+        self.iface.addPluginToMenu(u"&VoGIS Raumplanung", self.action_settings)
 
     def unload(self):
         # Remove the plugin menu item and icon
         self.iface.removePluginMenu(u"&VoGIS Raumplanung", self.action)
         self.iface.removeToolBarIcon(self.action)
 
-    # run method that performs all the real work
     def run(self):
-        # show the dialog
+        s = VRPSettings()
+        s.log()
+        datadir = s.read(s.key_datadir_base)
+        if datadir is None or datadir.isspace() or datadir == '':
+            dlg = VoGISRaumplanungPlotSettingsDialog(self.iface, s)
+            dlg.show()
+            #0=cancel 1=OK
+            result = dlg.exec_()
+            if result != 1:
+                return
+
         self.dlg.show()
-        # Run the dialog event loop
         result = self.dlg.exec_()
-        # See if OK was pressed
         if result == 1:
-            # do something useful (delete the line containing pass and
-            # substitute with your code)
             pass
+
+    def settings(self):
+        s = VRPSettings()
+        s.log()
+        dlg = VoGISRaumplanungPlotSettingsDialog(self.iface, s)
+        dlg.show()
+        dlg.exec_()
