@@ -10,9 +10,10 @@
 
 [general]
 name=VoGIS Raumplanung
-qgisMinimumVersion=2.0
 description=Create Plots from VoGIS Data.
 version=0.0.1
+qgisMinimumVersion=2.0
+qgisMaximumVersion=2.99
 author=BergWerk GIS
 email=wb@BergWerk-GIS.at
 

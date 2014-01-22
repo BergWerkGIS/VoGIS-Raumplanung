@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'ui_vogisraumplanungplotsettings.ui'
 #
-# Created: Wed Jan 22 13:34:49 2014
+# Created: Wed Jan 22 19:47:13 2014
 #      by: PyQt4 UI code generator 4.9.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -17,14 +17,14 @@ except AttributeError:
 class Ui_VoGISRaumplanungPlotSettings(object):
     def setupUi(self, VoGISRaumplanungPlotSettings):
         VoGISRaumplanungPlotSettings.setObjectName(_fromUtf8("VoGISRaumplanungPlotSettings"))
-        VoGISRaumplanungPlotSettings.resize(699, 208)
+        VoGISRaumplanungPlotSettings.resize(699, 242)
         self.buttonBox = QtGui.QDialogButtonBox(VoGISRaumplanungPlotSettings)
-        self.buttonBox.setGeometry(QtCore.QRect(230, 170, 176, 27))
+        self.buttonBox.setGeometry(QtCore.QRect(240, 210, 176, 27))
         self.buttonBox.setOrientation(QtCore.Qt.Horizontal)
         self.buttonBox.setStandardButtons(QtGui.QDialogButtonBox.Cancel|QtGui.QDialogButtonBox.Ok)
         self.buttonBox.setObjectName(_fromUtf8("buttonBox"))
         self.gridLayoutWidget = QtGui.QWidget(VoGISRaumplanungPlotSettings)
-        self.gridLayoutWidget.setGeometry(QtCore.QRect(10, 10, 671, 156))
+        self.gridLayoutWidget.setGeometry(QtCore.QRect(10, 10, 671, 173))
         self.gridLayoutWidget.setObjectName(_fromUtf8("gridLayoutWidget"))
         self.gridLayout = QtGui.QGridLayout(self.gridLayoutWidget)
         self.gridLayout.setMargin(0)
@@ -66,5 +66,5 @@ class Ui_VoGISRaumplanungPlotSettings(object):
         self.label.setText(QtGui.QApplication.translate("VoGISRaumplanungPlotSettings", "<html><head/><body><p>Basisverzeichnis<br/>(voller Pfad)</p></body></html>", None, QtGui.QApplication.UnicodeUTF8))
         self.label_2.setText(QtGui.QApplication.translate("VoGISRaumplanungPlotSettings", "<html><head/><body><p>Geodatenverzeichnis<br/>(nur Name)</p></body></html>", None, QtGui.QApplication.UnicodeUTF8))
         self.label_3.setText(QtGui.QApplication.translate("VoGISRaumplanungPlotSettings", "<html><head/><body><p align=\"center\">Projekteverzeichnis<br/>(nur Name)</p></body></html>", None, QtGui.QApplication.UnicodeUTF8))
-        self.label_4.setText(QtGui.QApplication.translate("VoGISRaumplanungPlotSettings", "<html><head/><body><p align=\"center\">Liste Gemeinden<br/>(nur Name)</p></body></html>", None, QtGui.QApplication.UnicodeUTF8))
+        self.label_4.setText(QtGui.QApplication.translate("VoGISRaumplanungPlotSettings", "<html><head/><body><p align=\"center\">Liste Gemeinden<br/>(voller Pfad mit<br/>Schreibberechtigung!)</p></body></html>", None, QtGui.QApplication.UnicodeUTF8))
 

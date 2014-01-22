@@ -25,3 +25,32 @@ def classFactory(iface):
     # load VoGISRaumplanungPlot class from file VoGISRaumplanungPlot
     from vogisraumplanungplot import VoGISRaumplanungPlot
     return VoGISRaumplanungPlot(iface)
+
+def name():
+    return "VoGIS Raumplanung"
+
+def description():
+    return "Create Plots from VoGIS Data."
+
+def version():
+    return "Version 0.0.1"
+
+def icon():
+    return "icon.png"
+
+def qgisMinimumVersion():
+    return "2.0"
+
+def qgisMaximumVersion():
+    return "2.99"
+
+def experimental():
+    return True
+
+
+def author():
+    return "BergWerk GIS"
+
+
+def email():
+    return "wb@BergWerk-GIS.at"

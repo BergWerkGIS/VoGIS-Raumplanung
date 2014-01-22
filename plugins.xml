@@ -1,0 +1,23 @@
+<?xml version = '1.0' encoding = 'UTF-8'?>
+<plugins>
+    <pyqgis_plugin name="VoGIS Raumplanung" version="0.0.1">
+        <description><![CDATA[Create Plots from VoGIS Data.]]></description>
+        <version>0.0.1</version>
+        <qgis_minimum_version>2.0.0</qgis_minimum_version>
+        <qgis_maximum_version>2.99.0</qgis_maximum_version>
+        <homepage>https://github.com/BergWerkGIS/VoGIS-Raumplanung/</homepage>
+        <file_name>vogisraumplanungplot.zip</file_name>
+        <author_name>BergWerk GIS</author_name>
+        <download_url>https://github.com/BergWerkGIS/VoGIS-Raumplanung/raw/master/</download_url>
+        <uploaded_by>BergWerkGis</uploaded_by>
+        <create_date>2014-01-14T11:05:32.087495</create_date>
+        <update_date>2014-01-14T11:05:32.087495</update_date>
+        <experimental>True</experimental>
+        <deprecated>False</deprecated>
+        <tracker>https://github.com/BergWerkGIS/VoGIS-Raumplanung/issues</tracker>
+        <repository>https://github.com/BergWerkGIS/VoGIS-Raumplanung</repository>
+        <tags>plot,pdf,composer,vogis</tags>
+        <downloads>1</downloads>
+        <average_vote>5</average_vote>
+        <rating_votes>1</rating_votes>
+</plugins>

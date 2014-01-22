@@ -20,8 +20,6 @@ class VRPSettings:
             self.store(self.key_datadirname_geodaten, 'Geodaten')
         if self.read(self.key_datadirname_projekte) is None:
             self.store(self.key_datadirname_projekte, 'Projekte')
-        if self.read(self.key_file_gemeinden) is None:
-            self.store(self.key_file_gemeinden, 'liste-gemeinden.txt')
 
     def store(self, key, val):
         self.s.setValue(key, val)

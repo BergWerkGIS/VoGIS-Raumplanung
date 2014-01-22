@@ -46,6 +46,9 @@ CORE_FILES = vrpcore/__init__.py \
              vrpcore/constvals.py \
              vrpcore/vrpsettings.py
 
+SRCES_FILES = vrpsources/__init__.py \
+              vrpsources/vrpgemeinden.py
+
 EXTRAS = icon.png metadata.txt
 
 UI_FILES = ui_vogisraumplanungplot.py \
@@ -74,9 +77,11 @@ compile: $(UI_FILES) $(RESOURCE_FILES)
 deploy: compile doc transcompile
 	mkdir -p $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
 	mkdir -p $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)/vrpcore
+	mkdir -p $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)/vrpsources
 
 	cp -vf $(PY_FILES) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
 	cp -vf $(CORE_FILES) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)/vrpcore
+	cp -vf $(SRCES_FILES) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)/vrpsources
 	cp -vf $(UI_FILES) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
 	cp -vf $(RESOURCE_FILES) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
 	cp -vf $(EXTRAS) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)

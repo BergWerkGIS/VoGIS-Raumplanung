@@ -48,9 +48,6 @@ class VoGISRaumplanungPlot:
             if qVersion() > '4.3.3':
                 QCoreApplication.installTranslator(self.translator)
 
-        # Create the dialog (after translation) and keep reference
-        self.dlg = VoGISRaumplanungPlotDialog(self.iface)
-
     def initGui(self):
         #http://www.iconarchive.com/show/build-icons-by-umar123/0045-Map-icon.html
         self.action = QAction( QIcon(":/plugins/vogisraumplanungplot/icon.png"), u"VoGIS Plot", self.iface.mainWindow())
@@ -79,6 +76,8 @@ class VoGISRaumplanungPlot:
             if result != 1:
                 return
 
+        # Create the dialog (after translation) and keep reference
+        self.dlg = VoGISRaumplanungPlotDialog(self.iface, s)
         self.dlg.show()
         result = self.dlg.exec_()
         if result == 1:
