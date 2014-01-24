@@ -11,7 +11,7 @@
 [general]
 name=VoGIS Raumplanung
 description=Create Plots from VoGIS Data.
-version=0.0.1
+version=0.0.2
 qgisMinimumVersion=2.0
 qgisMaximumVersion=2.99
 author=BergWerk GIS
@@ -22,10 +22,10 @@ email=wb@BergWerk-GIS.at
 # Optional items:
 
 # Uncomment the following line and add your changelog entries:
-# changelog=
+changelog=relative python imports, basic reading of settings from jsonfile
 
 # tags are comma separated with spaces allowed
-tags=plot pdf composer vogis
+tags=plot pdf composer vogis raumplanung
 
 homepage=https://github.com/BergWerkGIS/VoGIS-Raumplanung
 tracker=https://github.com/BergWerkGIS/VoGIS-Raumplanung/issues

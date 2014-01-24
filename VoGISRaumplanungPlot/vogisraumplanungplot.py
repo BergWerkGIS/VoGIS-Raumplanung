@@ -33,10 +33,9 @@ from vrpcore.constvals import *
 class VoGISRaumplanungPlot:
 
     def __init__(self, iface):
-        # Save reference to the QGIS interface
         self.iface = iface
-        # initialize plugin directory
         self.plugin_dir = os.path.dirname(__file__)
+
         # initialize locale
         locale = QSettings().value("locale/userLocale")[0:2]
         localePath = os.path.join(self.plugin_dir, 'i18n', 'vogisraumplanungplot_{}.qm'.format(locale))
@@ -62,13 +61,22 @@ class VoGISRaumplanungPlot:
     def unload(self):
         # Remove the plugin menu item and icon
         self.iface.removePluginMenu(u"&VoGIS Raumplanung", self.action)
+        self.iface.removePluginMenu(u"&VoGIS Raumplanung", self.action_settings)
         self.iface.removeToolBarIcon(self.action)
 
     def run(self):
         s = VRPSettings()
         s.log()
-        datadir = s.read(s.key_datadir_base)
-        if datadir is None or datadir.isspace() or datadir == '':
+        file_settings = s.read(s.key_file_settings)
+        file_gem_cache = s.read(s.key_file_gemeinden)
+        if (
+            file_settings is None or
+            file_settings.isspace() or
+            file_settings == '' or
+            file_gem_cache is None or
+            file_gem_cache.isspace() or
+            file_gem_cache == ''
+            ):
             dlg = VoGISRaumplanungPlotSettingsDialog(self.iface, s)
             dlg.show()
             #0=cancel 1=OK

@@ -44,7 +44,8 @@ PY_FILES = vogisraumplanungplot.py \
 
 CORE_FILES = vrpcore/__init__.py \
              vrpcore/constvals.py \
-             vrpcore/vrpsettings.py
+             vrpcore/vrpsettings.py \
+             vrpcore/vrpjsonsettings.py
 
 SRCES_FILES = vrpsources/__init__.py \
               vrpsources/vrpgemeinden.py
