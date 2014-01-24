@@ -1,6 +1,6 @@
 <?xml version = '1.0' encoding = 'UTF-8'?>
 <plugins>
-    <pyqgis_plugin name="VoGIS Raumplanung" version="0.0.1">
+    <pyqgis_plugin name="VoGIS Raumplanung" version="0.0.2">
         <description><![CDATA[Create Plots from VoGIS Data.]]></description>
         <version>0.0.2</version>
         <qgis_minimum_version>2.0.0</qgis_minimum_version>
