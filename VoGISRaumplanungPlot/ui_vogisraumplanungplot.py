@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'ui_vogisraumplanungplot.ui'
 #
-# Created: Fri Jan 24 13:15:56 2014
+# Created: Fri Jan 24 15:54:50 2014
 #      by: PyQt4 UI code generator 4.9.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -61,6 +61,7 @@ class Ui_VoGISRaumplanungPlot(object):
         QtCore.QObject.connect(self.buttonBox, QtCore.SIGNAL(_fromUtf8("rejected()")), VoGISRaumplanungPlot.reject)
         QtCore.QObject.connect(self.LST_GEMEINDEN, QtCore.SIGNAL(_fromUtf8("itemClicked(QListWidgetItem*)")), VoGISRaumplanungPlot.lst_gem_clicked)
         QtCore.QObject.connect(self.LE_GST_FILTER, QtCore.SIGNAL(_fromUtf8("textChanged(QString)")), VoGISRaumplanungPlot.gst_text_changed)
+        QtCore.QObject.connect(self.TREE_THEMEN, QtCore.SIGNAL(_fromUtf8("itemChanged(QTreeWidgetItem*,int)")), VoGISRaumplanungPlot.lst_themen_item_changed)
         QtCore.QMetaObject.connectSlotsByName(VoGISRaumplanungPlot)
 
     def retranslateUi(self, VoGISRaumplanungPlot):

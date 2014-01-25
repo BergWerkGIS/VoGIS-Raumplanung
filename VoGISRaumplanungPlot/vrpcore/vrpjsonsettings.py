@@ -3,6 +3,7 @@
 
 import json
 from collections import OrderedDict
+from ..vrpbo.vrpbothema import VRPThema
 
 class JsonSettings:
     """Class for reading JsonSettings"""
@@ -20,13 +21,14 @@ class JsonSettings:
         pfad = self.json['dkmgemeinde']['pfad']
         return pfad.replace('{gem_name}', gem_name)
 
+    def layouts(self):
+        """Composer layouts (Name and QPT file path)"""
+
+
     def themen(self):
         """Return Topics"""
         vrp_themen = OrderedDict()
-        for thema in self.json['themen']:
-            subthemen = []
-            if 'subthemen' in thema:
-                for subthema in thema['subthemen']:
-                    subthemen.append(subthema['name'])
-            vrp_themen[thema['name']] = subthemen
+        for js_thema in self.json['themen']:
+            thema = VRPThema(js_thema)
+            vrp_themen[thema.name] = thema
         return vrp_themen

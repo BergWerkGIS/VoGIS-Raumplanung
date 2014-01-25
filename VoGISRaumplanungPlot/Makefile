@@ -42,6 +42,9 @@ PY_FILES = vogisraumplanungplot.py \
            vogisraumplanungplotsettingsdialog.py \
            __init__.py
 
+BO_FILES = vrpbo/__init__.py \
+           vrpbo/vrpbothema.py
+
 CORE_FILES = vrpcore/__init__.py \
              vrpcore/constvals.py \
              vrpcore/vrpsettings.py \
@@ -77,10 +80,12 @@ compile: $(UI_FILES) $(RESOURCE_FILES)
 # $HOME/$(QGISDIR)/python/plugins
 deploy: compile doc transcompile
 	mkdir -p $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
+	mkdir -p $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)/vrpbo
 	mkdir -p $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)/vrpcore
 	mkdir -p $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)/vrpsources
 
 	cp -vf $(PY_FILES) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
+	cp -vf $(BO_FILES) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)/vrpbo
 	cp -vf $(CORE_FILES) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)/vrpcore
 	cp -vf $(SRCES_FILES) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)/vrpsources
 	cp -vf $(UI_FILES) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)

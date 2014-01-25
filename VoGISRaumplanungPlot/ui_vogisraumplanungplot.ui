@@ -159,8 +159,25 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>TREE_THEMEN</sender>
+   <signal>itemChanged(QTreeWidgetItem*,int)</signal>
+   <receiver>VoGISRaumplanungPlot</receiver>
+   <slot>lst_themen_item_changed(QTreeWidgetItem, int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>677</x>
+     <y>342</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>676</x>
+     <y>519</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>gst_text_changed(QString)</slot>
+  <slot>lst_themen_item_changed(QTreeWidgetItem,int)</slot>
  </slots>
 </ui>
