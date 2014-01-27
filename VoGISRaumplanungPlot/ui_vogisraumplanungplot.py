@@ -2,8 +2,8 @@
 
 # Form implementation generated from reading ui file 'ui_vogisraumplanungplot.ui'
 #
-# Created: Fri Jan 24 15:54:50 2014
-#      by: PyQt4 UI code generator 4.9.1
+# Created: Mon Jan 27 10:45:46 2014
+#      by: PyQt4 UI code generator 4.10.3
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -12,7 +12,16 @@ from PyQt4 import QtCore, QtGui
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
 except AttributeError:
-    _fromUtf8 = lambda s: s
+    def _fromUtf8(s):
+        return s
+
+try:
+    _encoding = QtGui.QApplication.UnicodeUTF8
+    def _translate(context, text, disambig):
+        return QtGui.QApplication.translate(context, text, disambig, _encoding)
+except AttributeError:
+    def _translate(context, text, disambig):
+        return QtGui.QApplication.translate(context, text, disambig)
 
 class Ui_VoGISRaumplanungPlot(object):
     def setupUi(self, VoGISRaumplanungPlot):
@@ -65,8 +74,8 @@ class Ui_VoGISRaumplanungPlot(object):
         QtCore.QMetaObject.connectSlotsByName(VoGISRaumplanungPlot)
 
     def retranslateUi(self, VoGISRaumplanungPlot):
-        VoGISRaumplanungPlot.setWindowTitle(QtGui.QApplication.translate("VoGISRaumplanungPlot", "VoGISRaumplanungPlot", None, QtGui.QApplication.UnicodeUTF8))
-        self.label_2.setText(QtGui.QApplication.translate("VoGISRaumplanungPlot", "Grundstücke", None, QtGui.QApplication.UnicodeUTF8))
-        self.label.setText(QtGui.QApplication.translate("VoGISRaumplanungPlot", "Gemeinden", None, QtGui.QApplication.UnicodeUTF8))
-        self.label_3.setText(QtGui.QApplication.translate("VoGISRaumplanungPlot", "Themen", None, QtGui.QApplication.UnicodeUTF8))
+        VoGISRaumplanungPlot.setWindowTitle(_translate("VoGISRaumplanungPlot", "VoGISRaumplanungPlot", None))
+        self.label_2.setText(_translate("VoGISRaumplanungPlot", "Grundstücke", None))
+        self.label.setText(_translate("VoGISRaumplanungPlot", "Gemeinden", None))
+        self.label_3.setText(_translate("VoGISRaumplanungPlot", "Themen", None))
 

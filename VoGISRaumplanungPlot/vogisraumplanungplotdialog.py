@@ -25,6 +25,7 @@ from collections import OrderedDict
 from PyQt4.QtCore import *
 from PyQt4.QtGui import QApplication
 from PyQt4.QtGui import QDialog
+from PyQt4.QtGui import QFileDialog
 from PyQt4.QtGui import QMessageBox
 from PyQt4.QtGui import QListWidget
 from PyQt4.QtGui import QListWidgetItem
@@ -76,6 +77,10 @@ class VoGISRaumplanungPlotDialog(QDialog):
         if len(self.ui.LST_GEMEINDEN.selectedItems()) < 1:
             QMessageBox.warning(self.iface.mainWindow(), DLG_CAPTION, u'Keine Gemeinde gewählt!')
             return
+        selected_gstk = self.__get_checked_gstke()
+        if len(selected_gstk) < 1:
+            QMessageBox.warning(self.iface.mainWindow(), DLG_CAPTION, u'Keine Grundstücke gewählt!')
+            return
         for i in xrange(0, self.ui.TREE_THEMEN.topLevelItemCount()):
             node_root = self.ui.TREE_THEMEN.topLevelItem(i)
             if node_root.checkState(0) == Qt.Checked:
@@ -84,6 +89,15 @@ class VoGISRaumplanungPlotDialog(QDialog):
                 node_thema = node_root.child(j)
                 if node_thema.checkState(0) == Qt.Checked:
                     self.__add_thema_layer(node_thema)
+        fileDlg = QFileDialog(self.iface.mainWindow())
+        pdf_out = fileDlg.getSaveFileName(
+                                          self.iface.mainWindow(),
+                                          "PDF speichern unter ...",
+                                          None,
+                                          'PDF Datei (*.pdf)'
+                                          )
+        if pdf_out is None or pdf_out == '':
+            return
         QDialog.accept(self)
 
     def reject(self):
@@ -134,9 +148,21 @@ class VoGISRaumplanungPlotDialog(QDialog):
     def lst_themen_item_changed(self, item, idx):
         if VRP_DEBUG is True: QgsMessageLog.logMessage('treeitem changed: {0} {1}'.format(item, idx), DLG_CAPTION)
         checked = item.checkState(0)
+        if checked == Qt.Unchecked and item.text(0) == 'DKM':
+            item.setCheckState(0, Qt.Checked)
+            return
         for i in xrange(0, item.childCount()):
             item.child(i).setCheckState(0, checked)
 
+    def __get_checked_gstke(self):
+        checked = []
+        for i in range(0, self.ui.LST_GSTKE.count()):
+            item = self.ui.LST_GSTKE.item(i)
+            if item.checkState() == Qt.Checked:
+                gstk_props = item.data(Qt.UserRole)
+                if VRP_DEBUG is True: QgsMessageLog.logMessage('gstk_props: {0}'.format(gstk_props), DLG_CAPTION)
+                checked.append(gstk_props['gnr'])
+        return checked
 
     def __add_gstke(self, filter):
         QApplication.setOverrideCursor(Qt.WaitCursor)
@@ -185,8 +211,10 @@ class VoGISRaumplanungPlotDialog(QDialog):
             tree_thema.setText(0, thema_name)
             tree_thema.setData(0, Qt.UserRole, thema)
             tree_thema.setFlags(tree_thema.flags() | Qt.ItemIsUserCheckable)
-            #important! won't work otherwise
-            tree_thema.setCheckState(0, Qt.Unchecked)
+            if thema_name == 'DKM':
+                tree_thema.setCheckState(0, Qt.Checked)
+            else:
+                tree_thema.setCheckState(0, Qt.Unchecked)
             if not thema.subthemen is None:
                 for subthema in thema.subthemen:
                     if VRP_DEBUG is True: QgsMessageLog.logMessage(u'Subthema: {0}'.format(subthema.name), DLG_CAPTION)

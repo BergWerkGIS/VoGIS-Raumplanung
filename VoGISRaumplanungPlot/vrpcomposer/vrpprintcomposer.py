@@ -1,61 +1,65 @@
+# -*- coding: utf-8 -*-
+"""Atlas Generation"""
+
+import os
 from PyQt4.QtCore import QFile
 from PyQt4.QtXml import QDomDocument
 from PyQt4.QtCore import QIODevice
 from PyQt4.QtCore import QSizeF
 from PyQt4.QtGui import QPrinter
 from PyQt4.QtGui import QPainter
+from qgis.core import QgsComposition
 
+class VRPPrintComposer:
+    """Atlas Generation"""
+    def __init(self, maprenderer, coveragelayer, featurefilter, templateqpt, pdfmap):
+        self.map_renderer = maprenderer
+        self.coverage_layer = coveragelayer
+        self.feature_filter = featurefilter
+        self.template_qpt = templateqpt
+        self.pdf_map = pdfmap
 
-http://www.qgis.org/en/docs/pyqgis_developer_cookbook/composer.html#output-using-map-composer
-mapRenderer = iface.mapCanvas().mapRenderer()
-c = QgsComposition(mapRenderer)
-c.setPlotStyle(QgsComposition.Print)
+    def export_map(self):
+        """Export map to pdf"""
+        if os.path.isfile(self.pdf_map):
+            try:
+                os.remove(self.pdf_map)
+            except:
+                return u'Konnte Ausgabedatei nicht ĺöschen!\n{0}'.format(self.pdf_map)
+        composition = QgsComposition(self.map_renderer)
+        composition.setPlotStyle(QgsComposition.Print)
 
-http://qt-project.org/doc/qt-4.8/qdomdocument.html#QDomDocument-2
-xml_file = QFile('/home/user/VoGIS-Raumplanung-Daten/A4_hoch_template.qpt')
-if xml_file.open(QIODevice.ReadOnly) is True:
-    WEITER
+        xml_file = QFile(self.template_qpt)
+        if xml_file.open(QIODevice.ReadOnly) is False:
+            return u'Konnte Template nicht öffnen!\n{0}'.format(self.template_qpt)
+        xml_doc = QDomDocument('mydoc')
+        xml_doc.setContent(xml_file)
+        if composition.loadFromTemplate(xml_doc) is False:
+            return u'Konnte Template nicht laden!\n{0}'.format(self.template_qpt)
 
+        atlas = composition.atlasComposition()
+        atlas.setEnabled(True)
+        atlas.setSingleFile(True)
+        atlas.setCoverageLayer(self.coverage_layer)
+        atlas.setFeatureFilter(self.feature_filter)
+        atlas.setHideCoverage(False)
 
-doc = QDomDocument('mydoc')
-doc.setContent(xml_file)
-if c.loadFromTemplate(doc) is True:
-    WEITER
+        printer = QPrinter()
+        printer.setOutputFormat(QPrinter.PdfFormat)
+        printer.setOutputFileName(self.pdf_map)
+        printer.setPaperSize(QSizeF(composition.paperWidth(), composition.paperHeight()), QPrinter.Millimeter)
+        printer.setFullPage(True)
+        printer.setColorMode(QPrinter.Color)
+        printer.setResolution(composition.printResolution())
 
+        pdf_painter = QPainter(printer)
+        atlas.beginRender()
 
-
-from PyQt4.QtCore import QFile
-from PyQt4.QtXml import QDomDocument
-from PyQt4.QtCore import QIODevice
-from PyQt4.QtCore import QSizeF
-from PyQt4.QtGui import QPrinter
-from PyQt4.QtGui import QPainter
-
-mapRenderer = iface.mapCanvas().mapRenderer()
-c = QgsComposition(mapRenderer)
-c.setPlotStyle(QgsComposition.Print)
-
-xml_file = QFile('/home/user/VoGIS-Raumplanung-Daten/A4_hoch_template.qpt')
-if xml_file.open(QIODevice.ReadOnly) is False:
-    throwError
-
-doc = QDomDocument('mydoc')
-doc.setContent(xml_file)
-if c.loadFromTemplate(doc) is False:
-    throwError
-
-printer = QPrinter()
-printer.setOutputFormat(QPrinter.PdfFormat)
-printer.setOutputFileName("/home/user/out.pdf")
-printer.setPaperSize(QSizeF(c.paperWidth(), c.paperHeight()), QPrinter.Millimeter)
-printer.setFullPage(True)
-printer.setColorMode(QPrinter.Color)
-printer.setResolution(c.printResolution())
-
-pdfPainter = QPainter(printer)
-paperRectMM = printer.pageRect(QPrinter.Millimeter)
-paperRectPixel = printer.pageRect(QPrinter.DevicePixel)
-#TODO: checken ob File vorhanden?
-#LOESCHEN!!!
-c.render(pdfPainter, paperRectPixel, paperRectMM)
-pdfPainter.end()
+        num_feats = atlas.numFeatures()
+        for i in range(0, num_feats):
+            atlas.prepareForFeature(i)
+            composition.renderPage(pdf_painter, 0)
+            if i < num_feats - 1:
+                printer.newPage()
+        atlas.endRender()
+        pdf_painter.end()

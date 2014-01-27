@@ -69,7 +69,8 @@ class VRPGemeinden:
             lyr = QgsVectorLayer(shp_full_filename, 'XYZ', 'ogr')
             gst = {}
             for feat in lyr.getFeatures():
-                gst[feat['GNR']] = '123'
+                gnr = feat['GNR']
+                gst[gnr] = { 'gnr':gnr, 'bbox':None }
             self.gstke[gem_name] = gst
         except:
             ex_txt = '{0}'.format(sys.exc_info()[0])
