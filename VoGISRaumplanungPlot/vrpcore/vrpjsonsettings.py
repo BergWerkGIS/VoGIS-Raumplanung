@@ -4,6 +4,7 @@
 import json
 from collections import OrderedDict
 from ..vrpbo.vrpbothema import VRPThema
+from ..vrpbo.vrpbolayout import VRPLayout
 
 class JsonSettings:
     """Class for reading JsonSettings"""
@@ -23,6 +24,11 @@ class JsonSettings:
 
     def layouts(self):
         """Composer layouts (Name and QPT file path)"""
+        vrp_layouts = OrderedDict()
+        for js_layout in self.json['composerlayouts']:
+            layout = VRPLayout(js_layout)
+            vrp_layouts[layout.name] = layout
+        return vrp_layouts
 
 
     def themen(self):

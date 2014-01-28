@@ -40,18 +40,21 @@ from vrpcore.vrpsettings import VRPSettings
 from vrpcore.vrpjsonsettings import JsonSettings
 from vrpcore.constvals import *
 from vrpsources.vrpgemeinden import VRPGemeinden
+from vrpcomposer.vrpprintcomposer import VRPPrintComposer
 
 class VoGISRaumplanungPlotDialog(QDialog):
 
     def __init__(self, iface, settings):
         self.iface = iface
         self.s = settings
+        self.json_settings = JsonSettings(self.s.read(self.s.key_file_settings))
 
         QDialog.__init__(self, iface.mainWindow())
         # Set up the user interface from Designer.
         self.ui = Ui_VoGISRaumplanungPlot()
         self.ui.setupUi(self)
 
+        self.dkm_coverage_layer = None
         self.gstke = {}
         self.curr_gem_name = None
         self.__add_themen()
@@ -69,18 +72,23 @@ class VoGISRaumplanungPlotDialog(QDialog):
             QApplication.restoreOverrideCursor()
 
         #speed up items insertion
-        self.ui.LST_GSTKE.setLayoutMode( QListWidget.Batched );
-        self.ui.LST_GSTKE.setBatchSize( 100 );
-        self.ui.LST_GSTKE.setUniformItemSizes(True);
+        self.ui.LST_GSTKE.setLayoutMode( QListWidget.Batched )
+        self.ui.LST_GSTKE.setBatchSize( 100 )
+        self.ui.LST_GSTKE.setUniformItemSizes(True)
 
     def accept(self):
         if len(self.ui.LST_GEMEINDEN.selectedItems()) < 1:
             QMessageBox.warning(self.iface.mainWindow(), DLG_CAPTION, u'Keine Gemeinde gewählt!')
             return
-        selected_gstk = self.__get_checked_gstke()
-        if len(selected_gstk) < 1:
+
+        gstk_filter = self.__get_checked_gstke()
+        if gstk_filter is None:
             QMessageBox.warning(self.iface.mainWindow(), DLG_CAPTION, u'Keine Grundstücke gewählt!')
             return
+
+        QgsMapLayerRegistry.instance().removeAllMapLayers()
+        QgsMapLayerRegistry.instance().clearAllLayerCaches()
+
         for i in xrange(0, self.ui.TREE_THEMEN.topLevelItemCount()):
             node_root = self.ui.TREE_THEMEN.topLevelItem(i)
             if node_root.checkState(0) == Qt.Checked:
@@ -89,14 +97,28 @@ class VoGISRaumplanungPlotDialog(QDialog):
                 node_thema = node_root.child(j)
                 if node_thema.checkState(0) == Qt.Checked:
                     self.__add_thema_layer(node_thema)
-        fileDlg = QFileDialog(self.iface.mainWindow())
-        pdf_out = fileDlg.getSaveFileName(
-                                          self.iface.mainWindow(),
-                                          "PDF speichern unter ...",
-                                          None,
-                                          'PDF Datei (*.pdf)'
-                                          )
+
+        file_dlg = QFileDialog(self.iface.mainWindow())
+        pdf_out = file_dlg.getSaveFileName(
+                                           self.iface.mainWindow(),
+                                           "PDF speichern unter ...",
+                                           None,
+                                           'PDF Datei (*.pdf)'
+                                           )
         if pdf_out is None or pdf_out == '':
+            return
+
+        layout = self.json_settings.layouts()[self.json_settings.layouts().keys()[0]].pfad
+        composer = VRPPrintComposer(
+                                    self.iface.mapCanvas().mapRenderer(),
+                                    self.dkm_coverage_layer,
+                                    gstk_filter,
+                                    layout,
+                                    pdf_out
+                                    )
+        result = composer.export_map()
+        if not result is None:
+            QMessageBox.warning(self.iface.mainWindow(), DLG_CAPTION, u'PDF konnte nicht exportiert werden:\n{0}'.format(result))
             return
         QDialog.accept(self)
 
@@ -120,6 +142,8 @@ class VoGISRaumplanungPlotDialog(QDialog):
             else:
                 if pfad.endswith('.shp') is True:
                     layer = QgsVectorLayer(pfad, thema.name, "ogr")
+                    if pfad.endswith('GST.shp') is True:
+                        self.dkm_coverage_layer = layer
                 else:
                     fileinfo = QFileInfo(pfad)
                     basename = fileinfo.baseName()
@@ -162,7 +186,15 @@ class VoGISRaumplanungPlotDialog(QDialog):
                 gstk_props = item.data(Qt.UserRole)
                 if VRP_DEBUG is True: QgsMessageLog.logMessage('gstk_props: {0}'.format(gstk_props), DLG_CAPTION)
                 checked.append(gstk_props['gnr'])
-        return checked
+        if len(checked) < 1:
+            return None
+        gstk_filter = ''
+        for i in range(0, len(checked)):
+            if i > 0:
+                gstk_filter += ' OR '
+            gstk_filter += u'"GNR" LIKE \'{0}\''.format(checked[i])
+        if VRP_DEBUG is True: QgsMessageLog.logMessage('gstk_filter: {0}'.format(gstk_filter), DLG_CAPTION)
+        return gstk_filter
 
     def __add_gstke(self, filter):
         QApplication.setOverrideCursor(Qt.WaitCursor)
@@ -204,8 +236,7 @@ class VoGISRaumplanungPlotDialog(QDialog):
         #          ('Naturschutz',['Natura 2000', 'Naturschutzgebiet', 'Pflanzenschutzgebiet', u'Geschützter Landschaftsteil', u'Biosphärenpark', 'Ruhezone', u'örtliches Schutzgebiet', u'Großraumbiotop', 'Streuwiesenevaluierung']),
         #          ('Wasser',['Quellen', 'Brunnen', 'Schutzgebiet', 'GW-Schongebiet', 'HQ30', 'HQ100', 'HQ300'])
         #          ])
-        json_settings = JsonSettings(self.s.read(self.s.key_file_settings))
-        themen = json_settings.themen()
+        themen = self.json_settings.themen()
         for thema_name, thema in themen.iteritems():
             tree_thema = QTreeWidgetItem(self.ui.TREE_THEMEN)
             tree_thema.setText(0, thema_name)
