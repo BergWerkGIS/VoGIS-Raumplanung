@@ -3,6 +3,8 @@
 *.sublime-project
 *.sublime-workspace
 
+README.html
+
 # C extensions
 *.so
 

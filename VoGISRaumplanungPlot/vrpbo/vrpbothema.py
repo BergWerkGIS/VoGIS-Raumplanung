@@ -7,12 +7,16 @@ from ..vrpcore.constvals import *
 
 class VRPQuelle:
     """Data source"""
-    def __init__(self, js_quelle):
+    def __init__(self, js_quelle, parent_name):
         self.pfad = js_quelle['pfad']
         self.qml = None
         if 'qml' in js_quelle:
             if not js_quelle['qml'].isspace() and not js_quelle['qml'] == '':
                 self.qml = js_quelle['qml']
+        self.name = parent_name
+        if 'name' in js_quelle:
+            if not js_quelle['name'].isspace() and not js_quelle['name'] == '':
+                self.name = js_quelle['name']
 
 
 class VRPThema:
@@ -34,5 +38,5 @@ class VRPThema:
         quellen = []
         for js_quelle in js_quellen:
             if VRP_DEBUG is True: QgsMessageLog.logMessage('VRPQuelle: {0}'.format(js_quelle), DLG_CAPTION)
-            quellen.append(VRPQuelle(js_quelle))
+            quellen.append(VRPQuelle(js_quelle, self.name))
         return quellen

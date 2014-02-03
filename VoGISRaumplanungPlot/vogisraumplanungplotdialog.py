@@ -98,6 +98,11 @@ class VoGISRaumplanungPlotDialog(QDialog):
                 if node_thema.checkState(0) == Qt.Checked:
                     self.__add_thema_layer(node_thema)
 
+        self.__add_dkm_layers()
+        if self.dkm_coverage_layer is None:
+            QMessageBox.warning(self.iface.mainWindow(), DLG_CAPTION, u'DKM konnte nicht geladen werden!')
+            return
+
         file_dlg = QFileDialog(self.iface.mainWindow())
         pdf_out = file_dlg.getSaveFileName(
                                            self.iface.mainWindow(),
@@ -116,7 +121,8 @@ class VoGISRaumplanungPlotDialog(QDialog):
                                     layout,
                                     pdf_out
                                     )
-        result = composer.export_map()
+        #result = composer.export_atlas()
+        result = composer.export_all_features()
         if not result is None:
             QMessageBox.warning(self.iface.mainWindow(), DLG_CAPTION, u'PDF konnte nicht exportiert werden:\n{0}'.format(result))
             return
@@ -129,6 +135,7 @@ class VoGISRaumplanungPlotDialog(QDialog):
         thema = node.data(0, Qt.UserRole)
         if thema.quellen is None:
             return
+        layers = []
         for quelle in thema.quellen:
             pfad = quelle.pfad.replace('{gem_name}', self.curr_gem_name)
             qml = None
@@ -141,9 +148,7 @@ class VoGISRaumplanungPlotDialog(QDialog):
                 QMessageBox.warning(self.iface.mainWindow(), DLG_CAPTION, u'Thema [{0}] nicht vorhanden:\n{1}'.format(thema.name, pfad))
             else:
                 if pfad.endswith('.shp') is True:
-                    layer = QgsVectorLayer(pfad, thema.name, "ogr")
-                    if pfad.endswith('GST.shp') is True:
-                        self.dkm_coverage_layer = layer
+                    layer = QgsVectorLayer(pfad, quelle.name, "ogr")
                 else:
                     fileinfo = QFileInfo(pfad)
                     basename = fileinfo.baseName()
@@ -154,6 +159,29 @@ class VoGISRaumplanungPlotDialog(QDialog):
                 if not qml is None:
                     layer.loadNamedStyle(qml)
                 QgsMapLayerRegistry.instance().addMapLayer(layer)
+                layers.append(layer)
+        if len(layers) > 1:
+            leg = self.iface.legendInterface()
+            idx = leg.addGroup(thema.name)
+            for lyr in layers:
+                leg.moveLayer(lyr, idx)
+
+
+    def __add_dkm_layers(self):
+        dkmgem = self.json_settings.dkm_gemeinde(self.curr_gem_name)
+        if VRP_DEBUG is True:
+            QgsMessageLog.logMessage('__add_dkm_layers: {0}'.format(dkmgem.keys()), DLG_CAPTION)
+            QgsMessageLog.logMessage('__add_dkm_layers: {0}'.format(dkmgem['shpgnr']), DLG_CAPTION)
+            QgsMessageLog.logMessage('__add_dkm_layers: {0}'.format(dkmgem['qmlgnr']), DLG_CAPTION)
+            QgsMessageLog.logMessage('__add_dkm_layers: {0}'.format(dkmgem['shpgstk']), DLG_CAPTION)
+            QgsMessageLog.logMessage('__add_dkm_layers: {0}'.format(dkmgem['qmlgstk']), DLG_CAPTION)
+        lyr = QgsVectorLayer(dkmgem['shpgstk'], 'DKM', 'ogr')
+        lyr.loadNamedStyle(dkmgem['qmlgstk'])
+        QgsMapLayerRegistry.instance().addMapLayer(lyr)
+        self.dkm_coverage_layer = lyr
+        lyr = QgsVectorLayer(dkmgem['shpgnr'], 'DKM GNR', 'ogr')
+        lyr.loadNamedStyle(dkmgem['qmlgnr'])
+        QgsMapLayerRegistry.instance().addMapLayer(lyr)
 
     def lst_gem_clicked(self, item):
         QApplication.setOverrideCursor(Qt.WaitCursor)
@@ -180,19 +208,21 @@ class VoGISRaumplanungPlotDialog(QDialog):
 
     def __get_checked_gstke(self):
         checked = []
+        fldkg = self.json_settings.fld_kg()
+        fldgnr = self.json_settings.fld_gnr()
         for i in range(0, self.ui.LST_GSTKE.count()):
             item = self.ui.LST_GSTKE.item(i)
             if item.checkState() == Qt.Checked:
                 gstk_props = item.data(Qt.UserRole)
                 if VRP_DEBUG is True: QgsMessageLog.logMessage('gstk_props: {0}'.format(gstk_props), DLG_CAPTION)
-                checked.append(gstk_props['gnr'])
+                checked.append([gstk_props['kg'], gstk_props['gnr']])
         if len(checked) < 1:
             return None
         gstk_filter = ''
         for i in range(0, len(checked)):
             if i > 0:
                 gstk_filter += ' OR '
-            gstk_filter += u'"GNR" LIKE \'{0}\''.format(checked[i])
+            gstk_filter += u'("{0}" LIKE \'{1}\' AND "{2}" LIKE \'{3}\')'.format(fldkg, checked[i][0], fldgnr, checked[i][1])
         if VRP_DEBUG is True: QgsMessageLog.logMessage('gstk_filter: {0}'.format(gstk_filter), DLG_CAPTION)
         return gstk_filter
 

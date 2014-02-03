@@ -20,7 +20,8 @@ class VRPGemeinden:
         self.file_settings = self.qgis_settings.read(self.qgis_settings.key_file_settings)
         self.file_gemeinden = self.qgis_settings.read(self.qgis_settings.key_file_gemeinden)
         self.json_settings = JsonSettings(self.file_settings)
-        self.dkm_gesamt_filename, stand = self.json_settings.dkm_gesamt()
+        self.dkm_gesamt_filename = self.json_settings.dkm_gesamt()
+        stand = self.json_settings.dkm_stand()
         if VRP_DEBUG is True: print QgsMessageLog.logMessage(u'DKM Stand: {0}'.format(stand), DLG_CAPTION)
         self.gstke = {}
 
@@ -63,17 +64,22 @@ class VRPGemeinden:
         try:
             if gem_name in self.gstke:
                 return self.gstke[gem_name]
-            shp_full_filename = self.json_settings.dkm_gemeinde(gem_name)
+            shp_full_filename = self.json_settings.dkm_gemeinde(gem_name)['shpgstk']
             if path.exists(shp_full_filename) is False:
                 return {'Shapefile nicht vorhanden!':'FEHLER'}
             lyr = QgsVectorLayer(shp_full_filename, 'XYZ', 'ogr')
             gst = {}
             for feat in lyr.getFeatures():
-                gnr = feat['GNR']
-                gst[gnr] = { 'gnr':gnr, 'bbox':None }
+                kgem = feat[self.json_settings.fld_kg()]
+                gnr = feat[self.json_settings.fld_gnr()]
+                gst['{0}: {1}'.format(kgem, gnr)] = {'id':feat.id(), 'kg':kgem, 'gnr':gnr, 'bbox':None }
             self.gstke[gem_name] = gst
+        except AttributeError as exae:
+            ex_txt = u'{0}'.format(exae.message)
+            QgsMessageLog.logMessage('get_gst: {0}'.format(ex_txt), DLG_CAPTION)
+            return {'EXCEPTION':ex_txt}
         except:
-            ex_txt = '{0}'.format(sys.exc_info()[0])
-            QgsMessageLog.logMessage('get_gst: {0}'.format(ex_txt), 'VoGIS Raumplanung Plot')
+            ex_txt = 'xx{0}'.format(sys.exc_info()[0])
+            QgsMessageLog.logMessage('get_gst: {0}'.format(ex_txt), DLG_CAPTION)
             return {'EXCEPTION':ex_txt}
         return self.gstke[gem_name]

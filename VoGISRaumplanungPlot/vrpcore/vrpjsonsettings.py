@@ -3,6 +3,7 @@
 
 import json
 from collections import OrderedDict
+from ..vrpbo.vrpbothema import VRPQuelle
 from ..vrpbo.vrpbothema import VRPThema
 from ..vrpbo.vrpbolayout import VRPLayout
 
@@ -13,14 +14,33 @@ class JsonSettings:
         json_data = open(filename)
         self.json = json.load(json_data)
 
+    def fld_kg(self):
+        """Attribute field with KG number"""
+        return self.json['kgfeld']
+
+    def fld_gnr(self):
+        """Attribute field with GSTK number"""
+        return self.json['gnrfeld']
+
+    def dkm_stand(self):
+        """Date of DKM"""
+        return self.json['dkmstand']
+
     def dkm_gesamt(self):
         """Path to DKM shapefile for whole Vorarlberg"""
-        return self.json['dkmgesamt']['pfad'], self.json['dkmgesamt']['stand']
+        return self.json['dkmgesamt']['pfad']
 
     def dkm_gemeinde(self, gem_name):
         """Path to DKM shapefile for specific Gemeinde"""
-        pfad = self.json['dkmgemeinde']['pfad']
-        return pfad.replace('{gem_name}', gem_name)
+        shpgstk = self.json['dkmgemeinde']['shpgstk']
+        shpgstk = shpgstk.replace('{gem_name}', gem_name)
+        qmlgstk = self.json['dkmgemeinde']['qmlgstk']
+        qmlgstk = qmlgstk.replace('{gem_name}', gem_name)
+        shpgnr = self.json['dkmgemeinde']['shpgnr']
+        shpgnr = shpgnr.replace('{gem_name}', gem_name)
+        qmlgnr = self.json['dkmgemeinde']['qmlgnr']
+        qmlgnr = qmlgnr.replace('{gem_name}', gem_name)
+        return {'shpgstk':shpgstk, 'qmlgstk':qmlgstk, 'shpgnr':shpgnr, 'qmlgnr':qmlgnr}
 
     def layouts(self):
         """Composer layouts (Name and QPT file path)"""
