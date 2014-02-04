@@ -10,6 +10,8 @@ from PyQt4.QtCore import QIODevice
 from PyQt4.QtCore import QSizeF
 from PyQt4.QtGui import QPrinter
 from PyQt4.QtGui import QPainter
+from qgis.core import QgsMapLayerRegistry
+from qgis.core import QgsVectorLayer
 from qgis.core import QgsExpression
 from qgis.core import QgsComposition
 from qgis.core import QgsMessageLog
@@ -18,12 +20,18 @@ from ..vrpcore.constvals import *
 
 class VRPPrintComposer:
     """Atlas Generation"""
-    def __init__(self, maprenderer, coveragelayer, featurefilter, templateqpt, pdfmap):
+    def __init__(self, maprenderer, coveragelayer, featurefilter, themenlayers, templateqpt, pdfmap):
         self.map_renderer = maprenderer
         self.coverage_layer = coveragelayer
         self.feature_filter = featurefilter
+        self.themen_layers = themenlayers
         self.template_qpt = templateqpt
         self.pdf_map = pdfmap
+
+    def export_all_features_TEST(self):
+        lyr = QgsVectorLayer('/home/bergw/VoGIS-Raumplanung-Daten/Geodaten/Raumplanung/Flaechenwidmung/Dornbirn/Flaechenwidmungsplan/fwp_flaeche.shp', 'flaeiw', 'ogr')
+        lyr.loadNamedStyle('/home/bergw/VoGIS-Raumplanung-Daten/Geodaten/Raumplanung/Flaechenwidmung/Vorarlberg/Flaechenwidmungsplan/fwp_flaeche.qml')
+        QgsMapLayerRegistry.instance().addMapLayer(lyr)
 
     def export_all_features(self):
         """Export map to pdf atlas style (one page per feature)"""
@@ -100,7 +108,30 @@ class VRPPrintComposer:
             pdf_painter = QPainter(printer)
             paper_rect_pixel = printer.pageRect(QPrinter.DevicePixel)
             paper_rect_mm = printer.pageRect(QPrinter.Millimeter)
-            composition.render(pdf_painter, paper_rect_pixel, paper_rect_mm)
+            if len(self.themen_layers) < 1:
+                composition.render(pdf_painter, paper_rect_pixel, paper_rect_mm)
+            else:
+                try:
+                    lyr = QgsVectorLayer('/home/bergw/VoGIS-Raumplanung-Daten/Geodaten/Raumplanung/Flaechenwidmung/Dornbirn/Flaechenwidmungsplan/fwp_flaeche.shp', 'flaeiw', 'ogr')
+                    lyr.loadNamedStyle('/home/bergw/VoGIS-Raumplanung-Daten/Geodaten/Raumplanung/Flaechenwidmung/Vorarlberg/Flaechenwidmungsplan/fwp_flaeche.qml')
+                except:
+                    QgsMessageLog.logMessage('new lyr:{0}'.format(sys.exc_info()[0]), DLG_CAPTION)
+                #QgsMapLayerRegistry.instance().addMapLayer(lyr)
+                if VRP_DEBUG is True: QgsMessageLog.logMessage('self.maplayer_registry:{0}'.format(self.maplayer_registry), DLG_CAPTION)
+                cntr = 0
+                for thema, layers in self.themen_layers.iteritems():
+                    #if cntr > 0:
+                        #printer.newPage()
+                    for lyr in layers:
+                        if VRP_DEBUG is True: QgsMessageLog.logMessage('adding lyr:{0}'.format(cntr), DLG_CAPTION)
+                        #self.maplayer_registry.addMapLayer(lyr)
+                    #if VRP_DEBUG is True: QgsMessageLog.logMessage('before render page', DLG_CAPTION)
+                    #composition.renderPage(pdf_painter, 0)
+                    #if VRP_DEBUG is True: QgsMessageLog.logMessage('after render page', DLG_CAPTION)
+                    #for lyr in layers:
+                    #    if VRP_DEBUG is True: QgsMessageLog.logMessage('removing lyr:{0}'.format(lyr.name()), DLG_CAPTION)
+                        #self.maplayer_registry.removeMapLayer(lyr.id())
+                    cntr += 1
             pdf_painter.end()
         except AttributeError as exae:
             ex_txt = u'{0}'.format(exae.message)

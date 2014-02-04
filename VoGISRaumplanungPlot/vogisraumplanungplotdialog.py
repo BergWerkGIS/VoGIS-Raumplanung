@@ -20,6 +20,7 @@
  ***************************************************************************/
 """
 
+from copy import deepcopy
 import os
 from collections import OrderedDict
 from PyQt4.QtCore import *
@@ -89,14 +90,24 @@ class VoGISRaumplanungPlotDialog(QDialog):
         QgsMapLayerRegistry.instance().removeAllMapLayers()
         QgsMapLayerRegistry.instance().clearAllLayerCaches()
 
+        themen_layers = {}
         for i in xrange(0, self.ui.TREE_THEMEN.topLevelItemCount()):
             node_root = self.ui.TREE_THEMEN.topLevelItem(i)
+            thema = node_root.data(0, Qt.UserRole)
             if node_root.checkState(0) == Qt.Checked:
-                self.__add_thema_layer(node_root)
+                thema = node_root.data(0, Qt.UserRole)
+                layers = self.__add_thema_layer(node_root)
+                if len(layers) > 0:
+                    themen_layers[thema.name] = layers
             for j in xrange(0, node_root.childCount()):
                 node_thema = node_root.child(j)
                 if node_thema.checkState(0) == Qt.Checked:
-                    self.__add_thema_layer(node_thema)
+                    layers = self.__add_thema_layer(node_thema)
+                    if len(layers) > 0:
+                        if thema.name in themen_layers:
+                            themen_layers[thema.name].append(layers)
+                        else:
+                            themen_layers[thema.name] = layers
 
         self.__add_dkm_layers()
         if self.dkm_coverage_layer is None:
@@ -118,6 +129,7 @@ class VoGISRaumplanungPlotDialog(QDialog):
                                     self.iface.mapCanvas().mapRenderer(),
                                     self.dkm_coverage_layer,
                                     gstk_filter,
+                                    themen_layers,
                                     layout,
                                     pdf_out
                                     )
@@ -132,10 +144,10 @@ class VoGISRaumplanungPlotDialog(QDialog):
         QDialog.reject(self)
 
     def __add_thema_layer(self, node):
+        layers = []
         thema = node.data(0, Qt.UserRole)
         if thema.quellen is None:
-            return
-        layers = []
+            return layers
         for quelle in thema.quellen:
             pfad = quelle.pfad.replace('{gem_name}', self.curr_gem_name)
             qml = None
@@ -147,6 +159,7 @@ class VoGISRaumplanungPlotDialog(QDialog):
             if os.path.isfile(pfad) is False:
                 QMessageBox.warning(self.iface.mainWindow(), DLG_CAPTION, u'Thema [{0}] nicht vorhanden:\n{1}'.format(thema.name, pfad))
             else:
+                layer = None
                 if pfad.endswith('.shp') is True:
                     layer = QgsVectorLayer(pfad, quelle.name, "ogr")
                 else:
@@ -156,15 +169,17 @@ class VoGISRaumplanungPlotDialog(QDialog):
                     if not layer.isValid():
                         QMessageBox.warning(self.iface.mainWindow(), DLG_CAPTION, u'Raster [{0}] konnte nicht geladen werden:\n{1}'.format(thema.name, pfad))
                         continue
-                if not qml is None:
+                if not qml is None and not layer is None:
                     layer.loadNamedStyle(qml)
-                QgsMapLayerRegistry.instance().addMapLayer(layer)
-                layers.append(layer)
-        if len(layers) > 1:
-            leg = self.iface.legendInterface()
-            idx = leg.addGroup(thema.name)
-            for lyr in layers:
-                leg.moveLayer(lyr, idx)
+                #QgsMapLayerRegistry.instance().addMapLayer(layer)
+                if not layer is None:
+                    layers.append(deepcopy(layer))
+        #if len(layers) > 1:
+        #    leg = self.iface.legendInterface()
+        #    idx = leg.addGroup(thema.name)
+        #    for lyr in layers:
+        #        leg.moveLayer(lyr, idx)
+        return layers
 
 
     def __add_dkm_layers(self):
