@@ -90,24 +90,28 @@ class VoGISRaumplanungPlotDialog(QDialog):
         QgsMapLayerRegistry.instance().removeAllMapLayers()
         QgsMapLayerRegistry.instance().clearAllLayerCaches()
 
-        themen_layers = {}
+        themen = {}
         for i in xrange(0, self.ui.TREE_THEMEN.topLevelItemCount()):
-            node_root = self.ui.TREE_THEMEN.topLevelItem(i)
-            thema = node_root.data(0, Qt.UserRole)
-            if node_root.checkState(0) == Qt.Checked:
-                thema = node_root.data(0, Qt.UserRole)
-                layers = self.__add_thema_layer(node_root)
-                if len(layers) > 0:
-                    themen_layers[thema.name] = layers
-            for j in xrange(0, node_root.childCount()):
-                node_thema = node_root.child(j)
-                if node_thema.checkState(0) == Qt.Checked:
-                    layers = self.__add_thema_layer(node_thema)
-                    if len(layers) > 0:
-                        if thema.name in themen_layers:
-                            themen_layers[thema.name].append(layers)
-                        else:
-                            themen_layers[thema.name] = layers
+            node_thema = self.ui.TREE_THEMEN.topLevelItem(i)
+            #check, if any childnodes are checked
+            sub_themen = []
+            for j in xrange(0, node_thema.childCount()):
+                node_subthema = node_thema.child(j)
+                sub_thema = node_subthema.data(0, Qt.UserRole)
+                if node_subthema.checkState(0) == Qt.Checked:
+                    sub_themen.append(sub_thema)
+            #thema without subthemen
+            thema = node_thema.data(0, Qt.UserRole)
+            if (
+                node_thema.checkState(0) == Qt.Checked
+                and not thema.quellen is None
+                and len(sub_themen) < 1
+                ):
+                themen[thema] = None
+            elif len(sub_themen) > 0:
+                themen[thema] = sub_themen
+
+        #TODO: check, if all sources are valid
 
         self.__add_dkm_layers()
         if self.dkm_coverage_layer is None:
@@ -126,10 +130,11 @@ class VoGISRaumplanungPlotDialog(QDialog):
 
         layout = self.json_settings.layouts()[self.json_settings.layouts().keys()[0]].pfad
         composer = VRPPrintComposer(
-                                    self.iface.mapCanvas().mapRenderer(),
+                                    self.iface.mapCanvas(),
+                                    self.curr_gem_name,
                                     self.dkm_coverage_layer,
                                     gstk_filter,
-                                    themen_layers,
+                                    themen,
                                     layout,
                                     pdf_out
                                     )

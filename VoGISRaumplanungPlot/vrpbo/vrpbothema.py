@@ -27,6 +27,12 @@ class VRPThema:
         self.quellen = self.__get_quellen( js_thema['quellen']) if 'quellen' in js_thema else None
         self.subthemen = self.__get_sub_themen(js_thema['subthemen']) if 'subthemen' in js_thema else None
 
+#    def __str__(self):
+#        return '{0}, SubThemen:[{1}]'.format(self.name, ','.join(self.subthemen))
+
+#    def __unicode__(self):
+#        return u'{0}, SubThemen:[{1}]'.format(self.name, ','.join(self.subthemen))
+
     def __get_sub_themen(self, js_subthemen):
         subthemen = []
         for js_subthema in js_subthemen:

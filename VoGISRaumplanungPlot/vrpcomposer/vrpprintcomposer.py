@@ -5,6 +5,7 @@ import math
 import os
 import sys
 from PyQt4.QtCore import QFile
+from PyQt4.QtCore import QFileInfo
 from PyQt4.QtXml import QDomDocument
 from PyQt4.QtCore import QIODevice
 from PyQt4.QtCore import QSizeF
@@ -12,6 +13,7 @@ from PyQt4.QtGui import QPrinter
 from PyQt4.QtGui import QPainter
 from qgis.core import QgsMapLayerRegistry
 from qgis.core import QgsVectorLayer
+from qgis.core import QgsRasterLayer
 from qgis.core import QgsExpression
 from qgis.core import QgsComposition
 from qgis.core import QgsMessageLog
@@ -20,11 +22,13 @@ from ..vrpcore.constvals import *
 
 class VRPPrintComposer:
     """Atlas Generation"""
-    def __init__(self, maprenderer, coveragelayer, featurefilter, themenlayers, templateqpt, pdfmap):
-        self.map_renderer = maprenderer
+    def __init__(self, mapcanvas, gemname, coveragelayer, featurefilter, themen, templateqpt, pdfmap):
+        self.canvas = mapcanvas
+        self.map_renderer = self.canvas.mapRenderer()
+        self.gem_name = gemname
         self.coverage_layer = coveragelayer
         self.feature_filter = featurefilter
-        self.themen_layers = themenlayers
+        self.themen = themen
         self.template_qpt = templateqpt
         self.pdf_map = pdfmap
 
@@ -37,6 +41,7 @@ class VRPPrintComposer:
         """Export map to pdf atlas style (one page per feature)"""
         if VRP_DEBUG is True: QgsMessageLog.logMessage(u'exporting map', DLG_CAPTION)
         try:
+
             result = self.__delete_pdf()
             if not result is None:
                 return result
@@ -55,6 +60,7 @@ class VRPPrintComposer:
                     ids.append(feature.id())
             self.coverage_layer.select(ids)
             bbox = self.coverage_layer.boundingBoxOfSelected()
+            self.canvas.zoomToSelected(self.coverage_layer)
             if VRP_DEBUG is True: QgsMessageLog.logMessage(u'bbox:{0}'.format(bbox.toString()), DLG_CAPTION)
 
             #self.map_renderer.setExtent(bbox)
@@ -108,30 +114,47 @@ class VRPPrintComposer:
             pdf_painter = QPainter(printer)
             paper_rect_pixel = printer.pageRect(QPrinter.DevicePixel)
             paper_rect_mm = printer.pageRect(QPrinter.Millimeter)
-            if len(self.themen_layers) < 1:
+            #DKM only
+            if len(self.themen) < 1:
                 composition.render(pdf_painter, paper_rect_pixel, paper_rect_mm)
             else:
                 try:
-                    lyr = QgsVectorLayer('/home/bergw/VoGIS-Raumplanung-Daten/Geodaten/Raumplanung/Flaechenwidmung/Dornbirn/Flaechenwidmungsplan/fwp_flaeche.shp', 'flaeiw', 'ogr')
-                    lyr.loadNamedStyle('/home/bergw/VoGIS-Raumplanung-Daten/Geodaten/Raumplanung/Flaechenwidmung/Vorarlberg/Flaechenwidmungsplan/fwp_flaeche.qml')
+                    pass
+                    #lyr = QgsVectorLayer('/home/bergw/VoGIS-Raumplanung-Daten/Geodaten/Raumplanung/Flaechenwidmung/Dornbirn/Flaechenwidmungsplan/fwp_flaeche.shp', 'flaeiw', 'ogr')
+                    #lyr.loadNamedStyle('/home/bergw/VoGIS-Raumplanung-Daten/Geodaten/Raumplanung/Flaechenwidmung/Vorarlberg/Flaechenwidmungsplan/fwp_flaeche.qml')
+                    #QgsMapLayerRegistry.instance().addMapLayer(lyr)
                 except:
                     QgsMessageLog.logMessage('new lyr:{0}'.format(sys.exc_info()[0]), DLG_CAPTION)
                 #QgsMapLayerRegistry.instance().addMapLayer(lyr)
-                if VRP_DEBUG is True: QgsMessageLog.logMessage('self.maplayer_registry:{0}'.format(self.maplayer_registry), DLG_CAPTION)
                 cntr = 0
-                for thema, layers in self.themen_layers.iteritems():
-                    #if cntr > 0:
-                        #printer.newPage()
-                    for lyr in layers:
-                        if VRP_DEBUG is True: QgsMessageLog.logMessage('adding lyr:{0}'.format(cntr), DLG_CAPTION)
-                        #self.maplayer_registry.addMapLayer(lyr)
-                    #if VRP_DEBUG is True: QgsMessageLog.logMessage('before render page', DLG_CAPTION)
-                    #composition.renderPage(pdf_painter, 0)
-                    #if VRP_DEBUG is True: QgsMessageLog.logMessage('after render page', DLG_CAPTION)
-                    #for lyr in layers:
-                    #    if VRP_DEBUG is True: QgsMessageLog.logMessage('removing lyr:{0}'.format(lyr.name()), DLG_CAPTION)
-                        #self.maplayer_registry.removeMapLayer(lyr.id())
-                    cntr += 1
+                for thema, sub_themen in self.themen.iteritems():
+                    if not sub_themen is None:
+                        for sub_thema in sub_themen:
+                            layers = []
+                            for quelle in sub_thema.quellen:
+                                pfad = quelle.pfad.replace('{gem_name}', self.gem_name)
+                                qml = None
+                                if not quelle.qml is None:
+                                    qml = quelle.qml.replace('{gem_name}', self.gem_name)
+                                if VRP_DEBUG is True: QgsMessageLog.logMessage('adding lyr:{0}'.format(pfad), DLG_CAPTION)
+                                if pfad.lower().endswith('.shp') is True:
+                                    lyr = QgsVectorLayer(pfad, quelle.name, 'ogr')
+                                else:
+                                    fileinfo = QFileInfo(pfad)
+                                    basename = fileinfo.baseName()
+                                    lyr = QgsRasterLayer(pfad, basename)
+                                    if not lyr.isValid():
+                                        QgsMessageLog.logMessage( u'Raster [{0}] konnte nicht geladen werden:\n{1}'.format(thema.name, pfad), DLG_CAPTION)
+                                        continue
+                                if not qml is None:
+                                    lyr.loadNamedStyle(qml)
+                                QgsMapLayerRegistry.instance().addMapLayer(lyr)
+                                layers.append(lyr)
+                            if cntr > 0:
+                                printer.newPage()
+                            composition.renderPage(pdf_painter, 0)
+                            QgsMapLayerRegistry.instance().removeMapLayers([lyr.id() for lyr in layers])
+                            cntr += 1
             pdf_painter.end()
         except AttributeError as exae:
             ex_txt = u'{0}'.format(exae.message)
