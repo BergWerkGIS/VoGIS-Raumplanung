@@ -12,8 +12,9 @@ class VRPSettings:
 
     def __init__(self):
         self.s = QSettings()
-        self.key_file_settings = 'vogisraumplanungplot/einstellungen'
-        self.key_file_gemeinden = 'vogisraumplanungplot/listegemeinden'
+        self.key_file_settings = 'vogisraumplanungplot/filesettings'
+        self.key_file_gemeinden = 'vogisraumplanungplot/filegemcache'
+        self.key_file_pdf = 'vogisraumplanungplot/filepdf'
 
     def store(self, key, val):
         self.s.setValue(key, val)

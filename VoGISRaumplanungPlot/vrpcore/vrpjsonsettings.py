@@ -42,6 +42,10 @@ class JsonSettings:
         qmlgnr = qmlgnr.replace('{gem_name}', gem_name)
         return {'shpgstk':shpgstk, 'qmlgstk':qmlgstk, 'shpgnr':shpgnr, 'qmlgnr':qmlgnr}
 
+    def luftbild(self):
+        """Path to ortho image"""
+        return self.json['luftbild']
+
     def layouts(self):
         """Composer layouts (Name and QPT file path)"""
         vrp_layouts = OrderedDict()

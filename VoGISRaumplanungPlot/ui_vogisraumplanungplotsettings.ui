@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>689</width>
-    <height>152</height>
+    <width>727</width>
+    <height>144</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,57 +16,71 @@
   <property name="modal">
    <bool>true</bool>
   </property>
-  <widget class="QDialogButtonBox" name="buttonBox">
-   <property name="geometry">
-    <rect>
-     <x>500</x>
-     <y>120</y>
-     <width>176</width>
-     <height>27</height>
-    </rect>
-   </property>
-   <property name="orientation">
-    <enum>Qt::Horizontal</enum>
-   </property>
-   <property name="standardButtons">
-    <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
-   </property>
-  </widget>
-  <widget class="QWidget" name="gridLayoutWidget">
-   <property name="geometry">
-    <rect>
-     <x>10</x>
-     <y>10</y>
-     <width>671</width>
-     <height>101</height>
-    </rect>
-   </property>
-   <layout class="QGridLayout" name="gridLayout">
-    <item row="0" column="1">
-     <widget class="QLineEdit" name="LE_EINSTELLUNGEN"/>
-    </item>
-    <item row="1" column="1">
-     <widget class="QLineEdit" name="LE_FILE_GEM"/>
-    </item>
-    <item row="1" column="0">
-     <widget class="QLabel" name="label_4">
-      <property name="text">
-       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;Liste Gemeinden&lt;br/&gt;(voller Pfad mit&lt;br/&gt;Schreibberechtigung!)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-      </property>
-     </widget>
-    </item>
-    <item row="0" column="0">
-     <widget class="QLabel" name="label">
-      <property name="text">
-       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Einstellungsdatei&lt;br/&gt;(voller Pfad)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
-     </widget>
-    </item>
-   </layout>
-  </widget>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <layout class="QGridLayout" name="gridLayout">
+     <item row="0" column="0">
+      <widget class="QLabel" name="label">
+       <property name="text">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Einstellungsdatei&lt;br/&gt;(voller Pfad)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="label_4">
+       <property name="text">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;Liste Gemeinden&lt;br/&gt;(voller Pfad mit&lt;br/&gt;Schreibberechtigung!)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="2">
+      <widget class="QLineEdit" name="LE_EINSTELLUNGEN"/>
+     </item>
+     <item row="1" column="2">
+      <widget class="QLineEdit" name="LE_FILE_GEM"/>
+     </item>
+     <item row="0" column="1">
+      <widget class="QPushButton" name="BTN_FileSettings">
+       <property name="maximumSize">
+        <size>
+         <width>50</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="text">
+        <string>...</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QPushButton" name="BTN_FileGemCache">
+       <property name="maximumSize">
+        <size>
+         <width>50</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="text">
+        <string>...</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+     </property>
+    </widget>
+   </item>
+  </layout>
  </widget>
  <resources/>
  <connections>
@@ -77,12 +91,12 @@
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>265</x>
-     <y>280</y>
+     <x>9</x>
+     <y>134</y>
     </hint>
     <hint type="destinationlabel">
      <x>286</x>
-     <y>274</y>
+     <y>143</y>
     </hint>
    </hints>
   </connection>
@@ -93,14 +107,50 @@
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>265</x>
-     <y>274</y>
+     <x>9</x>
+     <y>134</y>
     </hint>
     <hint type="destinationlabel">
      <x>157</x>
-     <y>274</y>
+     <y>143</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>BTN_FileSettings</sender>
+   <signal>clicked()</signal>
+   <receiver>VoGISRaumplanungPlotSettings</receiver>
+   <slot>selectFileSettings()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>178</x>
+     <y>30</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>159</x>
+     <y>43</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>BTN_FileGemCache</sender>
+   <signal>clicked()</signal>
+   <receiver>VoGISRaumplanungPlotSettings</receiver>
+   <slot>selectFileGemCache()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>188</x>
+     <y>81</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>225</x>
+     <y>48</y>
     </hint>
    </hints>
   </connection>
  </connections>
+ <slots>
+  <slot>selectFileSettings()</slot>
+  <slot>selectFileGemCache()</slot>
+ </slots>
 </ui>

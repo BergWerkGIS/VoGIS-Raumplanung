@@ -60,6 +60,7 @@ class VoGISRaumplanungPlotDialog(QDialog):
         self.curr_gem_name = None
         self.__add_themen()
 
+        #add Gemeinde names
         self.gem_src = VRPGemeinden(self.s)
         QApplication.setOverrideCursor(Qt.WaitCursor)
         try:
@@ -72,6 +73,9 @@ class VoGISRaumplanungPlotDialog(QDialog):
         finally:
             QApplication.restoreOverrideCursor()
 
+        #insert layouts
+        for name, layout in self.json_settings.layouts().iteritems():
+            self.ui.CB_Layout.addItem(name, layout)
         #speed up items insertion
         self.ui.LST_GSTKE.setLayoutMode( QListWidget.Batched )
         self.ui.LST_GSTKE.setBatchSize( 100 )
@@ -122,18 +126,28 @@ class VoGISRaumplanungPlotDialog(QDialog):
         pdf_out = file_dlg.getSaveFileName(
                                            self.iface.mainWindow(),
                                            "PDF speichern unter ...",
-                                           None,
+                                           self.s.read(self.s.key_file_pdf),
                                            'PDF Datei (*.pdf)'
                                            )
         if pdf_out is None or pdf_out == '':
             return
+        self.s.store(self.s.key_file_pdf, pdf_out)
 
-        layout = self.json_settings.layouts()[self.json_settings.layouts().keys()[0]].pfad
+        layout = self.ui.CB_Layout.itemData(self.ui.CB_Layout.currentIndex())
+        if VRP_DEBUG is True:
+            QgsMessageLog.logMessage('selected Layout: {0}'.format(layout.name), DLG_CAPTION)
+            QgsMessageLog.logMessage('selected Layout: {0}'.format(layout.pfad), DLG_CAPTION)
+
+        ortho = None
+        if self.ui.CHK_Ortho.checkState() == Qt.Checked:
+            ortho = self.json_settings.luftbild()
+
         composer = VRPPrintComposer(
                                     self.iface.mapCanvas(),
                                     self.curr_gem_name,
                                     self.dkm_coverage_layer,
                                     gstk_filter,
+                                    ortho,
                                     themen,
                                     layout,
                                     pdf_out

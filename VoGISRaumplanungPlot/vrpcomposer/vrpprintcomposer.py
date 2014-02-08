@@ -22,12 +22,14 @@ from ..vrpcore.constvals import *
 
 class VRPPrintComposer:
     """Atlas Generation"""
-    def __init__(self, mapcanvas, gemname, coveragelayer, featurefilter, themen, templateqpt, pdfmap):
+    def __init__(self, mapcanvas, gemname, coveragelayer, featurefilter, orthoimage, themen, templateqpt, pdfmap):
         self.canvas = mapcanvas
         self.map_renderer = self.canvas.mapRenderer()
         self.gem_name = gemname
         self.coverage_layer = coveragelayer
         self.feature_filter = featurefilter
+        self.ortho = orthoimage
+        self.ortho_lyr = None
         self.themen = themen
         self.template_qpt = templateqpt
         self.pdf_map = pdfmap
@@ -99,6 +101,10 @@ class VRPPrintComposer:
             compmap.setNewScale(math.ceil((compmap.scale()/100.0)) * 100.0)
             if VRP_DEBUG is True: QgsMessageLog.logMessage(u'bbox new (after scale):{0}'.format(compmap.extent().toString()), DLG_CAPTION)
 
+            #add ORTHO after new extent -> performance
+            if not self.ortho is None:
+                self.ortho_lyr = self.__add_raster_layer(self.ortho)
+
             legend = composition.getComposerItemById('LEGENDE')
             if VRP_DEBUG is True: QgsMessageLog.logMessage(u'legende:{0}'.format(legend), DLG_CAPTION)
             if legend is not None:
@@ -128,28 +134,17 @@ class VRPPrintComposer:
                 #QgsMapLayerRegistry.instance().addMapLayer(lyr)
                 cntr = 0
                 for thema, sub_themen in self.themen.iteritems():
+                    if VRP_DEBUG is True: QgsMessageLog.logMessage('drucke Thema:{0}'.format(thema.name), DLG_CAPTION)
+                    if sub_themen is None:
+                        layers = self.__add_layers(thema)
+                        if cntr > 0:
+                            printer.newPage()
+                        composition.renderPage(pdf_painter, 0)
+                        QgsMapLayerRegistry.instance().removeMapLayers([lyr.id() for lyr in layers])
+                        cntr += 1
                     if not sub_themen is None:
                         for sub_thema in sub_themen:
-                            layers = []
-                            for quelle in sub_thema.quellen:
-                                pfad = quelle.pfad.replace('{gem_name}', self.gem_name)
-                                qml = None
-                                if not quelle.qml is None:
-                                    qml = quelle.qml.replace('{gem_name}', self.gem_name)
-                                if VRP_DEBUG is True: QgsMessageLog.logMessage('adding lyr:{0}'.format(pfad), DLG_CAPTION)
-                                if pfad.lower().endswith('.shp') is True:
-                                    lyr = QgsVectorLayer(pfad, quelle.name, 'ogr')
-                                else:
-                                    fileinfo = QFileInfo(pfad)
-                                    basename = fileinfo.baseName()
-                                    lyr = QgsRasterLayer(pfad, basename)
-                                    if not lyr.isValid():
-                                        QgsMessageLog.logMessage( u'Raster [{0}] konnte nicht geladen werden:\n{1}'.format(thema.name, pfad), DLG_CAPTION)
-                                        continue
-                                if not qml is None:
-                                    lyr.loadNamedStyle(qml)
-                                QgsMapLayerRegistry.instance().addMapLayer(lyr)
-                                layers.append(lyr)
+                            layers = self.__add_layers(sub_thema)
                             if cntr > 0:
                                 printer.newPage()
                             composition.renderPage(pdf_painter, 0)
@@ -161,9 +156,49 @@ class VRPPrintComposer:
             msg = 'export pdf (all features style), catch all: {0}'.format(ex_txt)
             QgsMessageLog.logMessage(msg, DLG_CAPTION)
             return msg
+        except TypeError as exte:
+            ex_txt = u'{0}'.format(exte.message)
+            msg = 'export pdf (all features style), catch all: {0}'.format(ex_txt)
+            QgsMessageLog.logMessage(msg, DLG_CAPTION)
+            return msg
         except:
-            return 'export pdf (all features style), catch all: {0}'.format(sys.exc_info()[0])
+            msg = 'export pdf (all features style), catch all: {0}'.format(sys.exc_info()[0])
+            QgsMessageLog.logMessage(msg, DLG_CAPTION)
+            return msg
         return None
+
+    def __add_raster_layer(self, rasterfile):
+        fileinfo = QFileInfo(rasterfile)
+        basename = fileinfo.baseName()
+        lyr = QgsRasterLayer(rasterfile, basename)
+        if not lyr.isValid():
+            QgsMessageLog.logMessage( u'Raster [{0}] konnte nicht geladen werden:\n{1}'.format(rasterfile), DLG_CAPTION)
+            return None
+        QgsMapLayerRegistry.instance().addMapLayer(lyr)
+        return lyr
+
+    def __add_layers(self, thema):
+        layers = []
+        for quelle in thema.quellen:
+            pfad = quelle.pfad.replace('{gem_name}', self.gem_name)
+            qml = None
+            if not quelle.qml is None:
+                qml = quelle.qml.replace('{gem_name}', self.gem_name)
+            if VRP_DEBUG is True: QgsMessageLog.logMessage('adding lyr:{0}'.format(pfad), DLG_CAPTION)
+            if pfad.lower().endswith('.shp') is True:
+                lyr = QgsVectorLayer(pfad, quelle.name, 'ogr')
+            else:
+                fileinfo = QFileInfo(pfad)
+                basename = fileinfo.baseName()
+                lyr = QgsRasterLayer(pfad, basename)
+                if not lyr.isValid():
+                    QgsMessageLog.logMessage( u'Raster [{0}] konnte nicht geladen werden:\n{1}'.format(thema.name, pfad), DLG_CAPTION)
+                    continue
+            if not qml is None:
+                lyr.loadNamedStyle(qml)
+            QgsMapLayerRegistry.instance().addMapLayer(lyr)
+            layers.append(lyr)
+        return layers
 
     def export_atlas(self):
         """Export map to pdf atlas style (one page per feature)"""
