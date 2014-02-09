@@ -4,13 +4,16 @@
 import math
 import os
 import sys
+import traceback
 from PyQt4.QtCore import QFile
 from PyQt4.QtCore import QFileInfo
+from PyQt4.QtCore import Qt
 from PyQt4.QtXml import QDomDocument
 from PyQt4.QtCore import QIODevice
 from PyQt4.QtCore import QSizeF
 from PyQt4.QtGui import QPrinter
 from PyQt4.QtGui import QPainter
+from PyQt4.QtGui import QTreeWidget
 from qgis.core import QgsMapLayerRegistry
 from qgis.core import QgsVectorLayer
 from qgis.core import QgsRasterLayer
@@ -22,8 +25,11 @@ from ..vrpcore.constvals import *
 
 class VRPPrintComposer:
     """Atlas Generation"""
-    def __init__(self, mapcanvas, gemname, coveragelayer, featurefilter, orthoimage, themen, templateqpt, pdfmap):
-        self.canvas = mapcanvas
+    def __init__(self, iface, gemname, coveragelayer, featurefilter, orthoimage, themen, templateqpt, pdfmap):
+        self.iface = iface
+        self.legiface = self.iface.legendInterface()
+        self.toc = self.iface.mainWindow().findChild(QTreeWidget, 'theMapLegend')
+        self.canvas = self.iface.mapCanvas()
         self.map_renderer = self.canvas.mapRenderer()
         self.gem_name = gemname
         self.coverage_layer = coveragelayer
@@ -33,6 +39,10 @@ class VRPPrintComposer:
         self.themen = themen
         self.template_qpt = templateqpt
         self.pdf_map = pdfmap
+        self.lyrname_ortho = 'Luftbild'
+        self.lyrname_dkm_gst = 'DKM'
+        self.lyrname_dkm_gnr = 'DKM GNR'
+        self.comp_leg = None
 
     def export_all_features_TEST(self):
         lyr = QgsVectorLayer('/home/bergw/VoGIS-Raumplanung-Daten/Geodaten/Raumplanung/Flaechenwidmung/Dornbirn/Flaechenwidmungsplan/fwp_flaeche.shp', 'flaeiw', 'ogr')
@@ -103,12 +113,13 @@ class VRPPrintComposer:
 
             #add ORTHO after new extent -> performance
             if not self.ortho is None:
-                self.ortho_lyr = self.__add_raster_layer(self.ortho)
+                self.ortho_lyr = self.__add_raster_layer(self.ortho, self.lyrname_ortho)
+                self.__reorder_layers()
+                self.__update_composer_items()
 
-            legend = composition.getComposerItemById('LEGENDE')
-            if VRP_DEBUG is True: QgsMessageLog.logMessage(u'legende:{0}'.format(legend), DLG_CAPTION)
-            if legend is not None:
-                legend.updateLegend()
+            self.comp_leg = composition.getComposerItemById('LEGENDE')
+            self.__update_composer_items()
+
             printer = QPrinter()
             printer.setOutputFormat(QPrinter.PdfFormat)
             printer.setOutputFileName(self.pdf_map)
@@ -139,6 +150,8 @@ class VRPPrintComposer:
                         layers = self.__add_layers(thema)
                         if cntr > 0:
                             printer.newPage()
+                        self.__reorder_layers()
+                        self.__update_composer_items()
                         composition.renderPage(pdf_painter, 0)
                         QgsMapLayerRegistry.instance().removeMapLayers([lyr.id() for lyr in layers])
                         cntr += 1
@@ -147,58 +160,126 @@ class VRPPrintComposer:
                             layers = self.__add_layers(sub_thema)
                             if cntr > 0:
                                 printer.newPage()
+                            self.__reorder_layers()
+                            self.__update_composer_items()
                             composition.renderPage(pdf_painter, 0)
                             QgsMapLayerRegistry.instance().removeMapLayers([lyr.id() for lyr in layers])
                             cntr += 1
             pdf_painter.end()
-        except AttributeError as exae:
-            ex_txt = u'{0}'.format(exae.message)
-            msg = 'export pdf (all features style), catch all: {0}'.format(ex_txt)
-            QgsMessageLog.logMessage(msg, DLG_CAPTION)
-            return msg
-        except TypeError as exte:
-            ex_txt = u'{0}'.format(exte.message)
-            msg = 'export pdf (all features style), catch all: {0}'.format(ex_txt)
-            QgsMessageLog.logMessage(msg, DLG_CAPTION)
-            return msg
         except:
-            msg = 'export pdf (all features style), catch all: {0}'.format(sys.exc_info()[0])
+            msg = 'export pdf (catch all):\n\n{0}'.format(traceback.format_exc())
             QgsMessageLog.logMessage(msg, DLG_CAPTION)
             return msg
         return None
 
-    def __add_raster_layer(self, rasterfile):
-        fileinfo = QFileInfo(rasterfile)
-        basename = fileinfo.baseName()
-        lyr = QgsRasterLayer(rasterfile, basename)
-        if not lyr.isValid():
-            QgsMessageLog.logMessage( u'Raster [{0}] konnte nicht geladen werden:\n{1}'.format(rasterfile), DLG_CAPTION)
+    def __update_composer_items(self):
+        if self.comp_leg is not None:
+            self.comp_leg.updateLegend()
+
+    def __reorder_layers(self):
+        #move ortho to bottom
+        if not self.ortho_lyr is None:
+            for idx in range(0, self.toc.topLevelItemCount()):
+                if self.toc.topLevelItem(idx).text(0) == self.lyrname_ortho:
+                    if VRP_DEBUG is True: QgsMessageLog.logMessage(u'idx {0}:{1}'.format(self.lyrname_ortho, idx), DLG_CAPTION)
+                    item = self.toc.takeTopLevelItem(idx)
+                    if VRP_DEBUG is True: QgsMessageLog.logMessage(u'topLevelItemCount:{0}'.format(self.toc.topLevelItemCount()), DLG_CAPTION)
+                    self.toc.insertTopLevelItem(self.toc.topLevelItemCount(), item)
+                    #legiface.refreshLayerSymbology(self.ortho_lyr)
+                    #self.canvas.setDirty(True)
+                    #self.canvas.refresh()
+                    #!!!!HACK TO REFRESH DRAWING ORDER
+                    #With Python there is no possibility to change oder of layer
+                    #in legend (=TOC)
+                    #http://gis.stackexchange.com/a/42007
+                    #Currently, using Python, there is limited functionality
+                    #for manipulating the QgsLegend. There is the QgsLegendInterface
+                    #but this does not have all the goodies that are present
+                    #in the QgsLegend, QgsLegendLayer, the inherited QgsLegendItem,
+                    #or any of the other classes associated with QgsLegend.
+                    self.legiface.setLayerVisible(self.ortho_lyr, False)
+                    self.legiface.setLayerVisible(self.ortho_lyr, True)
+                    if VRP_DEBUG is True:
+                        tmp = [lyr.name() for lyr in self.canvas.layers()]
+                        QgsMessageLog.logMessage(u'layers:{0}'.format(tmp), DLG_CAPTION)
+                    break
+            #o = self.toc.findItems(self.lyrname_ortho, Qt.MatchExactly)[0]
+            #QgsMessageLog.logMessage('toc:{0}'.format(dir(o)), DLG_CAPTION)
+            #toc.sortItems(0, Qt.AscendingOrder)
+        #move dkm to top
+        lyr_dkm_gst = self.__get_layer(self.lyrname_dkm_gst)
+        lyr_dkm_gnr = self.__get_layer(self.lyrname_dkm_gnr)
+        if lyr_dkm_gst is None or lyr_dkm_gnr is None:
+            return
+        #gst to top
+        for idx in range(0, self.toc.topLevelItemCount()):
+            if self.toc.topLevelItem(idx).text(0) == self.lyrname_dkm_gst:
+                item = self.toc.takeTopLevelItem(idx)
+                self.toc.insertTopLevelItem(0, item)
+                self.legiface.setLayerVisible(lyr_dkm_gst, False)
+                self.legiface.setLayerVisible(lyr_dkm_gst, True)
+                break
+        #move gnr to top
+        for idx in range(0, self.toc.topLevelItemCount()):
+            if self.toc.topLevelItem(idx).text(0) == self.lyrname_dkm_gnr:
+                item = self.toc.takeTopLevelItem(idx)
+                self.toc.insertTopLevelItem(0, item)
+                self.legiface.setLayerVisible(lyr_dkm_gnr, False)
+                self.legiface.setLayerVisible(lyr_dkm_gnr, True)
+                break
+
+    def __get_layer(self, lyrname):
+        for lyr in self.legiface.layers():
+            if lyr.name() == lyrname:
+                return lyr
+        return None
+
+    def __add_raster_layer(self, rasterfile, legend_name=None):
+        try:
+            if legend_name is None:
+                fileinfo = QFileInfo(rasterfile)
+                basename = fileinfo.baseName()
+            else:
+                basename = legend_name
+            lyr = QgsRasterLayer(rasterfile, basename)
+            if not lyr.isValid():
+                QgsMessageLog.logMessage( u'Raster [{0}] konnte nicht geladen werden:\n{1}'.format(rasterfile), DLG_CAPTION)
+                return None
+            QgsMapLayerRegistry.instance().addMapLayer(lyr)
+            return lyr
+        except:
+            msg = 'export pdf (__add_raster_layer): {0}'.format(sys.exc_info()[0])
+            QgsMessageLog.logMessage(msg, DLG_CAPTION)
             return None
-        QgsMapLayerRegistry.instance().addMapLayer(lyr)
-        return lyr
+        return None
 
     def __add_layers(self, thema):
-        layers = []
-        for quelle in thema.quellen:
-            pfad = quelle.pfad.replace('{gem_name}', self.gem_name)
-            qml = None
-            if not quelle.qml is None:
-                qml = quelle.qml.replace('{gem_name}', self.gem_name)
-            if VRP_DEBUG is True: QgsMessageLog.logMessage('adding lyr:{0}'.format(pfad), DLG_CAPTION)
-            if pfad.lower().endswith('.shp') is True:
-                lyr = QgsVectorLayer(pfad, quelle.name, 'ogr')
-            else:
-                fileinfo = QFileInfo(pfad)
-                basename = fileinfo.baseName()
-                lyr = QgsRasterLayer(pfad, basename)
-                if not lyr.isValid():
-                    QgsMessageLog.logMessage( u'Raster [{0}] konnte nicht geladen werden:\n{1}'.format(thema.name, pfad), DLG_CAPTION)
-                    continue
-            if not qml is None:
-                lyr.loadNamedStyle(qml)
-            QgsMapLayerRegistry.instance().addMapLayer(lyr)
-            layers.append(lyr)
-        return layers
+        try:
+            layers = []
+            for quelle in thema.quellen:
+                pfad = quelle.pfad.replace('{gem_name}', self.gem_name)
+                qml = None
+                if not quelle.qml is None:
+                    qml = quelle.qml.replace('{gem_name}', self.gem_name)
+                if VRP_DEBUG is True: QgsMessageLog.logMessage('adding lyr:\n{0}\n{1}'.format(pfad, qml), DLG_CAPTION)
+                if pfad.lower().endswith('.shp') is True:
+                    lyr = QgsVectorLayer(pfad, quelle.name, 'ogr')
+                else:
+                    fileinfo = QFileInfo(pfad)
+                    basename = fileinfo.baseName()
+                    lyr = QgsRasterLayer(pfad, basename)
+                    if not lyr.isValid():
+                        QgsMessageLog.logMessage( u'Raster [{0}] konnte nicht geladen werden:\n{1}'.format(thema.name, pfad), DLG_CAPTION)
+                        continue
+                if not qml is None:
+                    lyr.loadNamedStyle(qml)
+                QgsMapLayerRegistry.instance().addMapLayer(lyr)
+                layers.append(lyr)
+            return layers
+        except:
+            msg = 'export pdf (__add_layers): {0}'.format(sys.exc_info()[0])
+            QgsMessageLog.logMessage(msg, DLG_CAPTION)
+            return None
 
     def export_atlas(self):
         """Export map to pdf atlas style (one page per feature)"""

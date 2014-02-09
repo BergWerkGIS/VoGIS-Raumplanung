@@ -20,8 +20,10 @@
  ***************************************************************************/
 """
 
+import subprocess
 from copy import deepcopy
 import os
+import sys
 from collections import OrderedDict
 from PyQt4.QtCore import *
 from PyQt4.QtGui import QApplication
@@ -143,13 +145,13 @@ class VoGISRaumplanungPlotDialog(QDialog):
             ortho = self.json_settings.luftbild()
 
         composer = VRPPrintComposer(
-                                    self.iface.mapCanvas(),
+                                    self.iface,
                                     self.curr_gem_name,
                                     self.dkm_coverage_layer,
                                     gstk_filter,
                                     ortho,
                                     themen,
-                                    layout,
+                                    layout.pfad,
                                     pdf_out
                                     )
         #result = composer.export_atlas()
@@ -157,6 +159,13 @@ class VoGISRaumplanungPlotDialog(QDialog):
         if not result is None:
             QMessageBox.warning(self.iface.mainWindow(), DLG_CAPTION, u'PDF konnte nicht exportiert werden:\n{0}'.format(result))
             return
+        #open pdf
+        if sys.platform.startswith('darwin'):
+            subprocess.call(('open', pdf_out))
+        elif os.name == 'nt':
+            os.startfile(pdf_out)
+        elif os.name == 'posix':
+            subprocess.call(('xdg-open', pdf_out))
         QDialog.accept(self)
 
     def reject(self):
