@@ -236,6 +236,7 @@ class VRPPrintComposer:
 
     def __add_raster_layer(self, rasterfile, legend_name=None):
         try:
+            if VRP_DEBUG is True: QgsMessageLog.logMessage('export pdf (__add_raster_layer): {0}'.format(rasterfile), DLG_CAPTION)
             if legend_name is None:
                 fileinfo = QFileInfo(rasterfile)
                 basename = fileinfo.baseName()
@@ -248,10 +249,9 @@ class VRPPrintComposer:
             QgsMapLayerRegistry.instance().addMapLayer(lyr)
             return lyr
         except:
-            msg = 'export pdf (__add_raster_layer): {0}'.format(sys.exc_info()[0])
+            msg = 'export pdf (__add_raster_layer): {0}'.format(traceback.format_exc())
             QgsMessageLog.logMessage(msg, DLG_CAPTION)
             return None
-        return None
 
     def __add_layers(self, thema):
         try:
