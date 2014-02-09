@@ -244,7 +244,7 @@ class VRPPrintComposer:
                 basename = legend_name
             lyr = QgsRasterLayer(rasterfile, basename)
             if not lyr.isValid():
-                QgsMessageLog.logMessage( u'Raster [{0}] konnte nicht geladen werden:\n{1}'.format(rasterfile), DLG_CAPTION)
+                QgsMessageLog.logMessage( u'Raster [{0}] konnte nicht geladen werden!'.format(rasterfile), DLG_CAPTION)
                 return None
             QgsMapLayerRegistry.instance().addMapLayer(lyr)
             return lyr
