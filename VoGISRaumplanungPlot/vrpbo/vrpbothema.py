@@ -8,15 +8,29 @@ from ..vrpcore.constvals import *
 class VRPQuelle:
     """Data source"""
     def __init__(self, js_quelle, parent_name):
+        #set name to parent, will be set again below, if quelle has own name
+        self.name = parent_name
         self.pfad = js_quelle['pfad']
         self.qml = None
-        if 'qml' in js_quelle:
-            if not js_quelle['qml'].isspace() and not js_quelle['qml'] == '':
-                self.qml = js_quelle['qml']
-        self.name = parent_name
+        self.attribut = None
+        self.filter = None
+        self.text = None
         if 'name' in js_quelle:
             if not js_quelle['name'].isspace() and not js_quelle['name'] == '':
                 self.name = js_quelle['name']
+        if 'qml' in js_quelle:
+            if not js_quelle['qml'].isspace() and not js_quelle['qml'] == '':
+                self.qml = js_quelle['qml']
+        if 'attribut' in js_quelle:
+            if not js_quelle['attribut'].isspace() and not js_quelle['attribut'] == '':
+                self.attribut = js_quelle['attribut']
+        if 'filter' in js_quelle:
+            if not js_quelle['filter'].isspace() and not js_quelle['filter'] == '':
+                self.filter = js_quelle['filter']
+        if 'text' in js_quelle:
+            self.text = {}
+            for txt in js_quelle['text']:
+                self.text[txt] = js_quelle['text'][txt]
 
 
 class VRPThema:

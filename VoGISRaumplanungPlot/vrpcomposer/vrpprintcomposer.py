@@ -28,7 +28,7 @@ from ..vrpcore.constvals import *
 
 class VRPPrintComposer:
     """Atlas Generation"""
-    def __init__(self, iface, gemname, coveragelayer, featurefilter, orthoimage, themen, templateqpt, pdfmap):
+    def __init__(self, iface, gemname, coveragelayer, dkm_date, gnr_nbrs, featurefilter, orthoimage, themen, templateqpt, pdfmap):
         self.iface = iface
         self.legiface = self.iface.legendInterface()
         self.toc = self.iface.mainWindow().findChild(QTreeWidget, 'theMapLegend')
@@ -36,6 +36,8 @@ class VRPPrintComposer:
         self.map_renderer = self.canvas.mapRenderer()
         self.gem_name = gemname
         self.coverage_layer = coveragelayer
+        self.gnrs = gnr_nbrs
+        self.date_dkm = dkm_date
         self.feature_filter = featurefilter
         self.ortho = orthoimage
         self.ortho_lyr = None
@@ -47,6 +49,7 @@ class VRPPrintComposer:
         self.lyrname_dkm_gnr = 'DKM GNR'
         self.comp_leg = []
         self.comp_lbl = []
+        self.statistics = None
 
     def export_all_features_TEST(self):
         lyr = QgsVectorLayer('/home/bergw/VoGIS-Raumplanung-Daten/Geodaten/Raumplanung/Flaechenwidmung/Dornbirn/Flaechenwidmungsplan/fwp_flaeche.shp', 'flaeiw', 'ogr')
@@ -142,6 +145,7 @@ class VRPPrintComposer:
             if len(self.themen) < 1:
                 composition.render(pdf_painter, paper_rect_pixel, paper_rect_mm)
             else:
+                self.statistics = {}
                 try:
                     pass
                     #lyr = QgsVectorLayer('/home/bergw/VoGIS-Raumplanung-Daten/Geodaten/Raumplanung/Flaechenwidmung/Dornbirn/Flaechenwidmungsplan/fwp_flaeche.shp', 'flaeiw', 'ogr')
@@ -179,22 +183,30 @@ class VRPPrintComposer:
             return msg
         return None
 
+    def __calculate_statistics(self, thema, layers):
+        pass
+
+
     def __update_composer_items(self, oberthema):
         for leg in self.comp_leg:
             leg.updateLegend()
         for lbl in self.comp_lbl:
-            txt = lbl.text().replace('[Gemeindename]', self.gem_name)
+            txt = lbl[1].replace('[Gemeindename]', self.gem_name)
             txt = txt.replace('[Oberthema]', oberthema)
+            txt = txt.replace('[GNR]', ', '.join(self.gnrs))
             txt = txt.replace('[TODAY]', strftime("%d.%m.%Y"))
-            lbl.setText(txt)
+            txt = txt.replace('[DATE]', self.date_dkm)
+            lbl[0].setText(txt)
 
 
     def __get_items(self, typ):
         items = []
         for item in self.composition.items():
             if isinstance(item, typ):
-                #WENN LABEL ORIG_TEXT speichern
-                items.append(item)
+                if isinstance(item, QgsComposerLabel):
+                    items.append([item, item.text()])
+                else:
+                    items.append(item)
         return items
 
     def __reorder_layers(self):
@@ -285,6 +297,14 @@ class VRPPrintComposer:
                 if VRP_DEBUG is True: QgsMessageLog.logMessage('adding lyr:\n{0}\n{1}'.format(pfad, qml), DLG_CAPTION)
                 if pfad.lower().endswith('.shp') is True:
                     lyr = QgsVectorLayer(pfad, quelle.name, 'ogr')
+                    if not quelle.filter is None:
+                        if VRP_DEBUG is True: QgsMessageLog.logMessage('{0}'.format(quelle.filter), DLG_CAPTION)
+                        #exp = QgsExpression(quelle.filter)
+                        #if exp.hasParserError():
+                        #    QgsMessageLog.logMessage( u'Filter ungültig!\nQuelle:[{0}]\nFilter:{1}'.format(quelle.name, quelle.filter), DLG_CAPTION)
+                        #else:
+                        #    exp.prepare(lyr.pendingFields())
+                        lyr.setSubsetString(quelle.filter)
                 else:
                     fileinfo = QFileInfo(pfad)
                     basename = fileinfo.baseName()

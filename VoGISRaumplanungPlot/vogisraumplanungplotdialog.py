@@ -89,7 +89,7 @@ class VoGISRaumplanungPlotDialog(QDialog):
             QMessageBox.warning(self.iface.mainWindow(), DLG_CAPTION, u'Keine Gemeinde gewählt!')
             return
 
-        gstk_filter = self.__get_checked_gstke()
+        gstk_filter, gnrs = self.__get_checked_gstke()
         if gstk_filter is None:
             QMessageBox.warning(self.iface.mainWindow(), DLG_CAPTION, u'Keine Grundstücke gewählt!')
             return
@@ -118,7 +118,7 @@ class VoGISRaumplanungPlotDialog(QDialog):
             elif len(sub_themen) > 0:
                 themen[thema] = sub_themen
 
-        #TODO: check, if all sources are valid
+        #check, if all sources are valid
         errors = []
         for thema, subthemen in themen.iteritems():
             if not thema.quellen is None and len(thema.quellen) > 0:
@@ -168,6 +168,8 @@ class VoGISRaumplanungPlotDialog(QDialog):
                                     self.iface,
                                     self.curr_gem_name,
                                     self.dkm_coverage_layer,
+                                    self.json_settings.dkm_stand(),
+                                    gnrs,
                                     gstk_filter,
                                     ortho,
                                     themen,
@@ -280,14 +282,18 @@ class VoGISRaumplanungPlotDialog(QDialog):
                 if VRP_DEBUG is True: QgsMessageLog.logMessage('gstk_props: {0}'.format(gstk_props), DLG_CAPTION)
                 checked.append([gstk_props['kg'], gstk_props['gnr']])
         if len(checked) < 1:
-            return None
+            return None, None
         gstk_filter = ''
+        gnrs = []
         for i in range(0, len(checked)):
             if i > 0:
                 gstk_filter += ' OR '
-            gstk_filter += u'("{0}" LIKE \'{1}\' AND "{2}" LIKE \'{3}\')'.format(fldkg, checked[i][0], fldgnr, checked[i][1])
+            kg_nr = checked[i][0]
+            gnr = checked[i][1]
+            gnrs.append(gnr)
+            gstk_filter += u'("{0}" LIKE \'{1}\' AND "{2}" LIKE \'{3}\')'.format(fldkg, kg_nr, fldgnr, gnr)
         if VRP_DEBUG is True: QgsMessageLog.logMessage('gstk_filter: {0}'.format(gstk_filter), DLG_CAPTION)
-        return gstk_filter
+        return gstk_filter, gnrs
 
     def __add_gstke(self, filter):
         QApplication.setOverrideCursor(Qt.WaitCursor)
@@ -318,17 +324,6 @@ class VoGISRaumplanungPlotDialog(QDialog):
         self.ui.TREE_THEMEN.header().resizeSection(0, 250)
         self.ui.TREE_THEMEN.header().setResizeMode(QHeaderView.ResizeToContents);
         self.ui.TREE_THEMEN.header().setStretchLastSection(True);
-        # roots = OrderedDict([
-        #          ('DKM', [u'Grundstücke', 'Beschriftung']),
-        #          ('Orthophoto',[]),
-        #          ('Raumplanung',[u'Flächenwidmungen', 'Beschriftung', u'Grünzone', u'Eignungszonen für Einkaufszentren', 'Einkaufszentren', 'Seveso-II Schutzabstand', u'Archäologische Fundzonen', 'Rohstoffplan']),
-        #          ('Gefahrenzonen (WLV)',['Rote Gefahrenzone', 'Gelbe Gefahrenzone', 'Braune Intensivzone und Hinweisbereich', 'Blauer Vorbehaltsbereich']),
-        #          ('Abfallwirtschaft',['Altstandorte', 'Deponien']),
-        #          ('Energie',['Gasleitungen', 'Hochspannungsleitungen', 'HS-Beschränkungsbereich']),
-        #          ('Geologie',['Geotopinventar']),
-        #          ('Naturschutz',['Natura 2000', 'Naturschutzgebiet', 'Pflanzenschutzgebiet', u'Geschützter Landschaftsteil', u'Biosphärenpark', 'Ruhezone', u'örtliches Schutzgebiet', u'Großraumbiotop', 'Streuwiesenevaluierung']),
-        #          ('Wasser',['Quellen', 'Brunnen', 'Schutzgebiet', 'GW-Schongebiet', 'HQ30', 'HQ100', 'HQ300'])
-        #          ])
         themen = self.json_settings.themen()
         for thema_name, thema in themen.iteritems():
             tree_thema = QTreeWidgetItem(self.ui.TREE_THEMEN)
