@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+from os import path
+from tempfile import TemporaryFile
 from PyQt4.QtCore import *
 from PyQt4.QtGui import QDialog
 from PyQt4.QtGui import QMessageBox
@@ -23,17 +25,41 @@ class VoGISRaumplanungPlotSettingsDialog(QDialog):
         self.ui.LE_FILE_GEM.setText(self.s.read(self.s.key_file_gemeinden))
 
     def reject(self):
-        if VRP_DEBUG is True: QgsMessageLog.logMessage('ABBRUCH', DLG_CAPTION)
+        if VRP_DEBUG is True: QgsMessageLog.logMessage('Einstellungen: ABBRUCH', DLG_CAPTION)
         QDialog.reject(self)
 
     def accept(self):
-        if VRP_DEBUG is True: QgsMessageLog.logMessage('SPEICHERN', DLG_CAPTION)
-        if VRP_DEBUG is True: QMessageBox.warning(self.iface.mainWindow(), DLG_CAPTION, 'TODO: Eingaben validieren!!!\n\n????\nDirekt in Settings\n??')
-
-        self.s.store(self.s.key_file_settings, self.ui.LE_EINSTELLUNGEN.text())
-        self.s.store(self.s.key_file_gemeinden, self.ui.LE_FILE_GEM.text())
+        if VRP_DEBUG is True: QgsMessageLog.logMessage('Einstellungen: SPEICHERN', DLG_CAPTION)
+        file_settings = self.ui.LE_EINSTELLUNGEN.text()
+        file_gemcache = self.ui.LE_FILE_GEM.text()
+        if path.isfile(file_settings) is False:
+            QMessageBox.warning(self.iface.mainWindow(), DLG_CAPTION, 'Einstellungsdatei: Nicht vorhanden!')
+            return
+        if self.__canWrite(file_gemcache) is False:
+            msg = 'Gemeindeliste: Keine Schreibberechtigung im Verzeichnis!\n\nEinstellungen trotzdem speichern?'
+            answer = QMessageBox.question(
+                                          self.iface.mainWindow(),
+                                          DLG_CAPTION,
+                                          msg,
+                                          QMessageBox.Yes | QMessageBox.No
+                                          )
+            if QMessageBox.No == answer:
+                return
+        self.s.store(self.s.key_file_settings, file_settings)
+        self.s.store(self.s.key_file_gemeinden, file_gemcache)
 
         QDialog.accept(self)
+
+    def __canWrite(self, cache_file):
+        pfad = path.dirname(cache_file)
+        tmp_file = TemporaryFile(dir=pfad)
+        try:
+            print 'WRiTING TEST', tmp_file
+            return True
+        except:
+            return False
+        finally:
+            tmp_file.close()
 
     def selectFileSettings(self):
         file_dlg = QFileDialog(self.iface.mainWindow())

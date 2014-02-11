@@ -23,6 +23,7 @@
 import subprocess
 from copy import deepcopy
 import os
+from os import path
 import sys
 from collections import OrderedDict
 from PyQt4.QtCore import *
@@ -118,6 +119,25 @@ class VoGISRaumplanungPlotDialog(QDialog):
                 themen[thema] = sub_themen
 
         #TODO: check, if all sources are valid
+        errors = []
+        for thema, subthemen in themen.iteritems():
+            if not thema.quellen is None and len(thema.quellen) > 0:
+                for quelle in thema.quellen:
+                    quelle.pfad = quelle.pfad.replace('{gem_name}', self.curr_gem_name)
+                    quelle.qml = quelle.qml.replace('{gem_name}', self.curr_gem_name)
+                    if path.isfile(quelle.pfad) is False: errors.append(quelle.pfad)
+                    if path.isfile(quelle.qml) is False: errors.append(quelle.qml)
+            for subthema in subthemen:
+                if not subthema.quellen is None and len(subthema.quellen) > 0:
+                    for quelle in subthema.quellen:
+                        quelle.pfad = quelle.pfad.replace('{gem_name}', self.curr_gem_name)
+                        quelle.qml = quelle.qml.replace('{gem_name}', self.curr_gem_name)
+                        if path.isfile(quelle.pfad) is False: errors.append(quelle.pfad)
+                        if path.isfile(quelle.qml) is False: errors.append(quelle.qml)
+        if len(errors) > 0:
+            msg = u'Diese Datenquellen sind ungültig:\n\n ' + u'\n'.join(errors)
+            QMessageBox.warning(self.iface.mainWindow(), DLG_CAPTION, msg)
+            return
 
         self.__add_dkm_layers()
         if self.dkm_coverage_layer is None:

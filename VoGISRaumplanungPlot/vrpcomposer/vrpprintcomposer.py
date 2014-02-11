@@ -5,6 +5,7 @@ import math
 import os
 import sys
 import traceback
+from time import strftime
 from PyQt4.QtCore import QFile
 from PyQt4.QtCore import QFileInfo
 from PyQt4.QtCore import Qt
@@ -19,6 +20,8 @@ from qgis.core import QgsVectorLayer
 from qgis.core import QgsRasterLayer
 from qgis.core import QgsExpression
 from qgis.core import QgsComposition
+from qgis.core import QgsComposerLabel
+from qgis.core import QgsComposerLegend
 from qgis.core import QgsMessageLog
 from ..vrpcore.constvals import *
 
@@ -42,7 +45,8 @@ class VRPPrintComposer:
         self.lyrname_ortho = 'Luftbild'
         self.lyrname_dkm_gst = 'DKM'
         self.lyrname_dkm_gnr = 'DKM GNR'
-        self.comp_leg = None
+        self.comp_leg = []
+        self.comp_lbl = []
 
     def export_all_features_TEST(self):
         lyr = QgsVectorLayer('/home/bergw/VoGIS-Raumplanung-Daten/Geodaten/Raumplanung/Flaechenwidmung/Dornbirn/Flaechenwidmungsplan/fwp_flaeche.shp', 'flaeiw', 'ogr')
@@ -79,6 +83,7 @@ class VRPPrintComposer:
             #self.map_renderer.updateScale()
 
             composition = QgsComposition(self.map_renderer)
+            self.composition = composition
             composition.setPlotStyle(QgsComposition.Print)
 
             error, xml_doc = self.__read_template()
@@ -115,10 +120,12 @@ class VRPPrintComposer:
             if not self.ortho is None:
                 self.ortho_lyr = self.__add_raster_layer(self.ortho, self.lyrname_ortho)
                 self.__reorder_layers()
-                self.__update_composer_items()
 
-            self.comp_leg = composition.getComposerItemById('LEGENDE')
-            self.__update_composer_items()
+            self.comp_leg = self.__get_items(QgsComposerLegend)
+            self.comp_lbl = self.__get_items(QgsComposerLabel)
+
+
+            self.__update_composer_items('DKM')
 
             printer = QPrinter()
             printer.setOutputFormat(QPrinter.PdfFormat)
@@ -151,7 +158,7 @@ class VRPPrintComposer:
                         if cntr > 0:
                             printer.newPage()
                         self.__reorder_layers()
-                        self.__update_composer_items()
+                        self.__update_composer_items(thema.name)
                         composition.renderPage(pdf_painter, 0)
                         QgsMapLayerRegistry.instance().removeMapLayers([lyr.id() for lyr in layers])
                         cntr += 1
@@ -161,7 +168,7 @@ class VRPPrintComposer:
                             if cntr > 0:
                                 printer.newPage()
                             self.__reorder_layers()
-                            self.__update_composer_items()
+                            self.__update_composer_items(thema.name)
                             composition.renderPage(pdf_painter, 0)
                             QgsMapLayerRegistry.instance().removeMapLayers([lyr.id() for lyr in layers])
                             cntr += 1
@@ -172,9 +179,23 @@ class VRPPrintComposer:
             return msg
         return None
 
-    def __update_composer_items(self):
-        if self.comp_leg is not None:
-            self.comp_leg.updateLegend()
+    def __update_composer_items(self, oberthema):
+        for leg in self.comp_leg:
+            leg.updateLegend()
+        for lbl in self.comp_lbl:
+            txt = lbl.text().replace('[Gemeindename]', self.gem_name)
+            txt = txt.replace('[Oberthema]', oberthema)
+            txt = txt.replace('[TODAY]', strftime("%d.%m.%Y"))
+            lbl.setText(txt)
+
+
+    def __get_items(self, typ):
+        items = []
+        for item in self.composition.items():
+            if isinstance(item, typ):
+                #WENN LABEL ORIG_TEXT speichern
+                items.append(item)
+        return items
 
     def __reorder_layers(self):
         #move ortho to bottom
