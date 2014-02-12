@@ -168,7 +168,7 @@ class VoGISRaumplanungPlotDialog(QDialog):
                                     self.iface,
                                     self.curr_gem_name,
                                     self.dkm_coverage_layer,
-                                    self.json_settings.dkm_stand(),
+                                    self.json_settings,
                                     gnrs,
                                     gstk_filter,
                                     ortho,

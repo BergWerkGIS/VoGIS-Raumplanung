@@ -15,20 +15,25 @@ from PyQt4.QtCore import QSizeF
 from PyQt4.QtGui import QPrinter
 from PyQt4.QtGui import QPainter
 from PyQt4.QtGui import QTreeWidget
-from qgis.core import QgsMapLayerRegistry
-from qgis.core import QgsVectorLayer
-from qgis.core import QgsRasterLayer
-from qgis.core import QgsExpression
-from qgis.core import QgsComposition
+import processing
 from qgis.core import QgsComposerLabel
 from qgis.core import QgsComposerLegend
+from qgis.core import QgsComposition
+from qgis.core import QgsExpression
+from qgis.core import QgsFeatureRequest
+from qgis.core import QgsMapLayerRegistry
 from qgis.core import QgsMessageLog
+from qgis.core import QgsRasterLayer
+from qgis.core import QgsVectorLayer
+from qgis.gui import QgsMessageBar
 from ..vrpcore.constvals import *
+from ..vrpbo.vrpbostatistik import VRPStatistik
+from ..vrpbo.vrpbostatistiksubthema import VRPStatistikSubThema
 
 
 class VRPPrintComposer:
     """Atlas Generation"""
-    def __init__(self, iface, gemname, coveragelayer, dkm_date, gnr_nbrs, featurefilter, orthoimage, themen, templateqpt, pdfmap):
+    def __init__(self, iface, gemname, coveragelayer, json_settings, gnr_nbrs, featurefilter, orthoimage, themen, templateqpt, pdfmap):
         self.iface = iface
         self.legiface = self.iface.legendInterface()
         self.toc = self.iface.mainWindow().findChild(QTreeWidget, 'theMapLegend')
@@ -37,7 +42,7 @@ class VRPPrintComposer:
         self.gem_name = gemname
         self.coverage_layer = coveragelayer
         self.gnrs = gnr_nbrs
-        self.date_dkm = dkm_date
+        self.settings = json_settings
         self.feature_filter = featurefilter
         self.ortho = orthoimage
         self.ortho_lyr = None
@@ -49,7 +54,7 @@ class VRPPrintComposer:
         self.lyrname_dkm_gnr = 'DKM GNR'
         self.comp_leg = []
         self.comp_lbl = []
-        self.statistics = None
+        self.statistics = {}
 
     def export_all_features_TEST(self):
         lyr = QgsVectorLayer('/home/bergw/VoGIS-Raumplanung-Daten/Geodaten/Raumplanung/Flaechenwidmung/Dornbirn/Flaechenwidmungsplan/fwp_flaeche.shp', 'flaeiw', 'ogr')
@@ -169,6 +174,7 @@ class VRPPrintComposer:
                     if not sub_themen is None:
                         for sub_thema in sub_themen:
                             layers = self.__add_layers(sub_thema)
+                            self.__calculate_statistics(sub_thema, layers)
                             if cntr > 0:
                                 printer.newPage()
                             self.__reorder_layers()
@@ -181,11 +187,86 @@ class VRPPrintComposer:
             msg = 'export pdf (catch all):\n\n{0}'.format(traceback.format_exc())
             QgsMessageLog.logMessage(msg, DLG_CAPTION)
             return msg
+        #if VRP_DEBUG is True:
+        QgsMessageLog.logMessage(u'====== STATISTICS =========', DLG_CAPTION)
+        for gnr, stats in self.statistics.iteritems():
+            QgsMessageLog.logMessage(u'{0}:\n{1}'.format(gnr, stats.__unicode__()), DLG_CAPTION)
+            QgsMessageLog.logMessage(u'- - - - - - - - - - - - - - - - - - - - - - - -', DLG_CAPTION)
+        QgsMessageLog.logMessage(u'====== END - STATISTICS =========', DLG_CAPTION)
+
         return None
 
     def __calculate_statistics(self, thema, layers):
-        pass
+        features = processing.features(self.coverage_layer)
+        for gstk in features:
+            try:
+                gnr = gstk[self.settings.fld_gnr()]
+                flaeche = gstk.geometry().area()
+                gstk_stats = VRPStatistik(gnr, flaeche, self.gem_name)
+                for lyr in layers:
+                    lyrname = lyr.name()
+                    lyr_thema = self.__get_thema_by_layername(lyrname)
+                    if VRP_DEBUG is True: QgsMessageLog.logMessage(u'lyrname:{0}, lyr_thema:{1}'.format(lyrname, lyr_thema), DLG_CAPTION)
+                    if lyr_thema is None: continue
+                    skip = False
+                    lyr_quelle = None
+                    for quelle in lyr_thema.quellen:
+                        if VRP_DEBUG is True: QgsMessageLog.logMessage(u'quelle:{0}, statistik:{1}'.format(quelle.name, quelle.statistik), DLG_CAPTION)
+                        if quelle.name == lyrname and quelle.statistik is False:
+                            skip = True
+                            break
+                        elif quelle.name == lyrname and quelle.statistik is True:
+                            lyr_quelle = quelle
+                            break
+                    if skip is True: continue
+                    text_flaeche = self.__get_text_flaeche(gstk, lyr, lyr_quelle.attribut)
+                    sub_stat = VRPStatistikSubThema(lyrname, text_flaeche)
+                    gstk_stats.add_subthema(sub_stat)
+                if gnr in self.statistics:
+                    self.statistics[gnr].subthemen.extend(gstk_stats.subthemen)
+                else:
+                    self.statistics[gnr] = gstk_stats
+            except:
+                msg = '__calculate_statistics:\n\n{0}'.format(traceback.format_exc())
+                QgsMessageLog.logMessage(msg, DLG_CAPTION, QgsMessageLog.CRITICAL)
+                self.iface.messageBar().pushMessage(msg,  QgsMessageBar.CRITICAL)
+                return
 
+    def __get_text_flaeche(self, gstk, layer, fld_name):
+        text = {}
+        #performance! filter by bb of gstk first
+        feat_req = QgsFeatureRequest()
+        feat_req.setFilterRect(gstk.geometry().boundingBox())
+        for feat in layer.getFeatures(feat_req):
+            if feat.geometry().intersects(gstk.geometry()):
+                #no fld_name defined: means yes/no only
+                if fld_name is None:
+                    attr_val = u'Ja'
+                else:
+                    attr_val = feat[fld_name]
+                flaeche = feat.geometry().intersection(gstk.geometry()).area()
+                if fld_name in text:
+                    text[attr_val] += flaeche
+                else:
+                    text[attr_val] = flaeche
+        if len(text) < 1 and fld_name is None:
+            text[u'Nein'] = 0
+        elif len(text) < 1 and not fld_name is None:
+            text[u'Nein'] = 0
+        return text
+
+
+    def __get_thema_by_layername(self, lyrname):
+        for thema in self.themen:
+            if thema.name == lyrname:
+                return thema
+            for subthema in thema.subthemen:
+                if subthema.name == lyrname:
+                    return subthema
+                for quelle in subthema.quellen:
+                    if quelle.name == lyrname:
+                        return subthema
+        return None
 
     def __update_composer_items(self, oberthema):
         for leg in self.comp_leg:
@@ -195,7 +276,7 @@ class VRPPrintComposer:
             txt = txt.replace('[Oberthema]', oberthema)
             txt = txt.replace('[GNR]', ', '.join(self.gnrs))
             txt = txt.replace('[TODAY]', strftime("%d.%m.%Y"))
-            txt = txt.replace('[DATE]', self.date_dkm)
+            txt = txt.replace('[DATE]', self.settings.dkm_stand())
             lbl[0].setText(txt)
 
 

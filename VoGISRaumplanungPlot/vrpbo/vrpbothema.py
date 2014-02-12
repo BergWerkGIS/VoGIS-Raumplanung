@@ -12,6 +12,7 @@ class VRPQuelle:
         self.name = parent_name
         self.pfad = js_quelle['pfad']
         self.qml = None
+        self.statistik = False
         self.attribut = None
         self.filter = None
         self.text = None
@@ -21,6 +22,8 @@ class VRPQuelle:
         if 'qml' in js_quelle:
             if not js_quelle['qml'].isspace() and not js_quelle['qml'] == '':
                 self.qml = js_quelle['qml']
+        if 'statistik' in js_quelle:
+            self.statistik = js_quelle['statistik']
         if 'attribut' in js_quelle:
             if not js_quelle['attribut'].isspace() and not js_quelle['attribut'] == '':
                 self.attribut = js_quelle['attribut']

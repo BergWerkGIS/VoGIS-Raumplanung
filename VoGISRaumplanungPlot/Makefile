@@ -44,7 +44,9 @@ PY_FILES = vogisraumplanungplot.py \
 
 BO_FILES = vrpbo/__init__.py \
            vrpbo/vrpbothema.py \
-           vrpbo/vrpbolayout.py
+           vrpbo/vrpbolayout.py \
+           vrpbo/vrpbostatistik.py \
+           vrpbo/vrpbostatistiksubthema.py
 
 COMPOSER_FILES = vrpcomposer/__init__.py \
                  vrpcomposer/vrpprintcomposer.py
