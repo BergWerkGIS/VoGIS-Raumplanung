@@ -3,7 +3,7 @@
 
 import json
 from collections import OrderedDict
-from ..vrpbo.vrpbothema import VRPQuelle
+#from ..vrpbo.vrpbothema import VRPQuelle
 from ..vrpbo.vrpbothema import VRPThema
 from ..vrpbo.vrpbolayout import VRPLayout
 
@@ -11,8 +11,13 @@ class JsonSettings:
     """Class for reading JsonSettings"""
 
     def __init__(self, filename):
-        json_data = open(filename)
-        self.json = json.load(json_data)
+        json_txt = ''
+        json_file = open(filename, 'r')
+        for line in json_file:
+            if line.strip().startswith('//') is False:
+                json_txt += line
+        #self.json = json.load(json_file)
+        self.json = json.loads(json_txt)
 
     def fld_kg(self):
         """Attribute field with KG number"""
@@ -45,6 +50,10 @@ class JsonSettings:
     def luftbild(self):
         """Path to ortho image"""
         return self.json['luftbild']
+
+    def textinfo_layout(self):
+        """Composer layout for statistical textinfo"""
+        return self.json['textinfolayout']
 
     def layouts(self):
         """Composer layouts (Name and QPT file path)"""

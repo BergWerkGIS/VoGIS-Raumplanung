@@ -33,7 +33,19 @@ from ..vrpbo.vrpbostatistiksubthema import VRPStatistikSubThema
 
 class VRPPrintComposer:
     """Atlas Generation"""
-    def __init__(self, iface, gemname, coveragelayer, json_settings, gnr_nbrs, featurefilter, orthoimage, themen, templateqpt, pdfmap):
+    def __init__(
+                 self,
+                 iface,
+                 gemname,
+                 coveragelayer,
+                 json_settings,
+                 gnr_nbrs,
+                 featurefilter,
+                 orthoimage,
+                 themen,
+                 templateqpt,
+                 pdfmap
+                 ):
         self.iface = iface
         self.legiface = self.iface.legendInterface()
         self.toc = self.iface.mainWindow().findChild(QTreeWidget, 'theMapLegend')
@@ -47,6 +59,8 @@ class VRPPrintComposer:
         self.ortho = orthoimage
         self.ortho_lyr = None
         self.themen = themen
+        self.composition = None
+        self.comp_textinfo = None
         self.template_qpt = templateqpt
         self.pdf_map = pdfmap
         self.lyrname_ortho = 'Luftbild'
@@ -90,15 +104,25 @@ class VRPPrintComposer:
             #self.map_renderer.setExtent(bbox)
             #self.map_renderer.updateScale()
 
+            #read plotlayout
             composition = QgsComposition(self.map_renderer)
             self.composition = composition
             composition.setPlotStyle(QgsComposition.Print)
-
             error, xml_doc = self.__read_template()
             if not error is None:
                 return error
             if composition.loadFromTemplate(xml_doc) is False:
                 return u'Konnte Template nicht laden!\n{0}'.format(self.template_qpt)
+
+            #read textinfo layout
+            self.comp_textinfo = QgsComposition(self.map_renderer)
+            self.comp_textinfo.setPlotStyle(QgsComposition.Print)
+            error, xml_doc = self.__read_template(True)
+            if not error is None:
+                return error
+            if self.comp_textinfo.loadFromTemplate(xml_doc) is False:
+                return u'Konnte Template nicht laden!\n{0}'.format(self.settings.textinfo_layout())
+
 
             new_ext = bbox
             compmap = composition.composerMapItems()[0]
@@ -182,17 +206,24 @@ class VRPPrintComposer:
                             composition.renderPage(pdf_painter, 0)
                             QgsMapLayerRegistry.instance().removeMapLayers([lyr.id() for lyr in layers])
                             cntr += 1
+            #output statistics
+            if len(self.statistics) > 0:
+                lbls = self.__get_items(QgsComposerLabel, self.comp_textinfo)
+                self.__update_composer_items('', lbls)
+                printer.newPage()
+                self.comp_textinfo.renderPage(pdf_painter, 0)
+            #end pdf export
             pdf_painter.end()
         except:
             msg = 'export pdf (catch all):\n\n{0}'.format(traceback.format_exc())
             QgsMessageLog.logMessage(msg, DLG_CAPTION)
             return msg
-        #if VRP_DEBUG is True:
-        QgsMessageLog.logMessage(u'====== STATISTICS =========', DLG_CAPTION)
-        for gnr, stats in self.statistics.iteritems():
-            QgsMessageLog.logMessage(u'{0}:\n{1}'.format(gnr, stats.__unicode__()), DLG_CAPTION)
-            QgsMessageLog.logMessage(u'- - - - - - - - - - - - - - - - - - - - - - - -', DLG_CAPTION)
-        QgsMessageLog.logMessage(u'====== END - STATISTICS =========', DLG_CAPTION)
+        if VRP_DEBUG is True:
+            QgsMessageLog.logMessage(u'====== STATISTICS =========', DLG_CAPTION)
+            for gnr, stats in self.statistics.iteritems():
+                QgsMessageLog.logMessage(u'{0}:\n{1}'.format(gnr, stats.__unicode__()), DLG_CAPTION)
+                QgsMessageLog.logMessage(u'- - - - - - - - - - - - - - - - - - - - - - - -', DLG_CAPTION)
+            QgsMessageLog.logMessage(u'====== END - STATISTICS =========', DLG_CAPTION)
 
         return None
 
@@ -268,10 +299,12 @@ class VRPPrintComposer:
                         return subthema
         return None
 
-    def __update_composer_items(self, oberthema):
+    def __update_composer_items(self, oberthema, labels=None):
+        if labels is None:
+            labels = self.comp_lbl
         for leg in self.comp_leg:
             leg.updateLegend()
-        for lbl in self.comp_lbl:
+        for lbl in labels:
             txt = lbl[1].replace('[Gemeindename]', self.gem_name)
             txt = txt.replace('[Oberthema]', oberthema)
             txt = txt.replace('[GNR]', ', '.join(self.gnrs))
@@ -280,10 +313,13 @@ class VRPPrintComposer:
             lbl[0].setText(txt)
 
 
-    def __get_items(self, typ):
+    def __get_items(self, typ, composition=None):
+        if composition is None:
+            composition = self.composition
         items = []
-        for item in self.composition.items():
+        for item in composition.items():
             if isinstance(item, typ):
+                #if label keep original text for placeholders
                 if isinstance(item, QgsComposerLabel):
                     items.append([item, item.text()])
                 else:
@@ -403,58 +439,6 @@ class VRPPrintComposer:
             QgsMessageLog.logMessage(msg, DLG_CAPTION)
             return None
 
-    def export_atlas(self):
-        """Export map to pdf atlas style (one page per feature)"""
-        if VRP_DEBUG is True: QgsMessageLog.logMessage(u'exporting map', DLG_CAPTION)
-        try:
-            result = self.__delete_pdf()
-            if not result is None:
-                return result
-            composition = QgsComposition(self.map_renderer)
-            composition.setPlotStyle(QgsComposition.Print)
-
-            error, xml_doc = self.__read_template()
-            if not error is None:
-                return error
-            if composition.loadFromTemplate(xml_doc) is False:
-                return u'Konnte Template nicht laden!\n{0}'.format(self.template_qpt)
-
-            if VRP_DEBUG is True: QgsMessageLog.logMessage(u'creating atlas', DLG_CAPTION)
-            atlas = composition.atlasComposition()
-            atlas.setEnabled(True)
-            atlas.setSingleFile(True)
-            atlas.setCoverageLayer(self.coverage_layer)
-            atlas.setFeatureFilter(self.feature_filter)
-            atlas.setHideCoverage(False)
-
-            if VRP_DEBUG is True: QgsMessageLog.logMessage(u'creating printer', DLG_CAPTION)
-            printer = QPrinter()
-            printer.setOutputFormat(QPrinter.PdfFormat)
-            printer.setOutputFileName(self.pdf_map)
-            printer.setPaperSize(QSizeF(composition.paperWidth(), composition.paperHeight()), QPrinter.Millimeter)
-            printer.setFullPage(True)
-            printer.setColorMode(QPrinter.Color)
-            printer.setResolution(composition.printResolution())
-
-            if VRP_DEBUG is True: QgsMessageLog.logMessage(u'creating painter', DLG_CAPTION)
-            pdf_painter = QPainter(printer)
-            if VRP_DEBUG is True: QgsMessageLog.logMessage(u'atlas beginRender', DLG_CAPTION)
-            atlas.beginRender()
-
-            num_feats = atlas.numFeatures()
-            if VRP_DEBUG is True: QgsMessageLog.logMessage(u'atlas features: {0}'.format(num_feats), DLG_CAPTION)
-            for i in range(0, num_feats):
-                if VRP_DEBUG is True: QgsMessageLog.logMessage(u'printing page: {0}/{1}'.format(i, num_feats), DLG_CAPTION)
-                atlas.prepareForFeature(i)
-                composition.renderPage(pdf_painter, 0)
-                if i < num_feats - 1:
-                    printer.newPage()
-            atlas.endRender()
-            pdf_painter.end()
-        except:
-            return 'export pdf (atlas style), catch all: {0}'.format(sys.exc_info()[0])
-        return None
-
     def __delete_pdf(self):
         if os.path.isfile(self.pdf_map):
             try:
@@ -464,11 +448,15 @@ class VRPPrintComposer:
                 return u'Konnte Ausgabedatei nicht ĺöschen!\n{0}'.format(self.pdf_map)
         return None
 
-    def __read_template(self):
-            if VRP_DEBUG is True: QgsMessageLog.logMessage(u'reading template: {0}'.format(self.template_qpt), DLG_CAPTION)
-            xml_file = QFile(self.template_qpt)
-            if xml_file.open(QIODevice.ReadOnly) is False:
-                return u'Konnte Template nicht öffnen!\n{0}'.format(self.template_qpt), None
-            xml_doc = QDomDocument('mydoc')
-            xml_doc.setContent(xml_file)
-            return None, xml_doc
+    def __read_template(self, textinfo=False):
+        if textinfo:
+            filename = self.settings.textinfo_layout()
+        else:
+            filename = self.template_qpt
+        if VRP_DEBUG is True: QgsMessageLog.logMessage(u'reading template: {0}'.format(filename), DLG_CAPTION)
+        xml_file = QFile(filename)
+        if xml_file.open(QIODevice.ReadOnly) is False:
+            return u'Konnte Template nicht öffnen!\n{0}'.format(self.template_qpt), None
+        xml_doc = QDomDocument('mydoc')
+        xml_doc.setContent(xml_file)
+        return None, xml_doc
