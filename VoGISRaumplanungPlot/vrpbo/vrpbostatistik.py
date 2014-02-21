@@ -1,20 +1,22 @@
 # -*- coding: utf-8 -*-
 """Business object for Grunstück Statistik"""
 
+from collections import OrderedDict
 from qgis.core import QgsMessageLog
 from ..vrpcore.constvals import *
 
 class VRPStatistik:
     """Statistics for one parcel"""
-    def __init__(self, gstk_nr, gstk_flaeche, gemeindename):
+    def __init__(self, gstk_nr, thema_name, gstk_flaeche, gemeindename):
         self.gnr = gstk_nr
+        self.thema = thema_name
         self.flaeche = gstk_flaeche
         self.gem_name = gemeindename
-        self.subthemen = []
+        self.subthemen = OrderedDict()
 
-    def add_subthema(self, subthema):
+    def add_subthema(self, thema_name, subthema):
         """add subthema"""
-        self.subthemen.append(subthema)
+        self.subthemen[thema_name] = subthema
 
     def __str__(self):
         asstr = '{1}{0}{2}{0}{3:.2f}'.format('\t', self.gem_name, self.gnr, self.flaeche)

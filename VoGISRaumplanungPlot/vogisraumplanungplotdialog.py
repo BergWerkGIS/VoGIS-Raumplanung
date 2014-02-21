@@ -21,6 +21,7 @@
 """
 
 import subprocess
+import traceback
 from copy import deepcopy
 import os
 from os import path
@@ -51,12 +52,18 @@ class VoGISRaumplanungPlotDialog(QDialog):
     def __init__(self, iface, settings):
         self.iface = iface
         self.s = settings
-        self.json_settings = JsonSettings(self.s.read(self.s.key_file_settings))
 
         QDialog.__init__(self, iface.mainWindow())
         # Set up the user interface from Designer.
         self.ui = Ui_VoGISRaumplanungPlot()
         self.ui.setupUi(self)
+
+        try:
+            self.json_settings = JsonSettings(self.s.read(self.s.key_file_settings))
+        except:
+            msg = u'Einstellungsdatei konnte nicht geladen werden!\nBitte die Datei auf korrektes JSON-Format überprüfen.\n\n\nFehlerprotokoll:\n{0}'.format(traceback.format_exc())
+            QMessageBox.warning(self.iface.mainWindow(), DLG_CAPTION, msg)
+            return
 
         self.dkm_coverage_layer = None
         self.gstke = {}
@@ -124,16 +131,18 @@ class VoGISRaumplanungPlotDialog(QDialog):
             if not thema.quellen is None and len(thema.quellen) > 0:
                 for quelle in thema.quellen:
                     quelle.pfad = quelle.pfad.replace('{gem_name}', self.curr_gem_name)
-                    quelle.qml = quelle.qml.replace('{gem_name}', self.curr_gem_name)
                     if path.isfile(quelle.pfad) is False: errors.append(quelle.pfad)
-                    if path.isfile(quelle.qml) is False: errors.append(quelle.qml)
+                    if not quelle.qml is None:
+                        quelle.qml = quelle.qml.replace('{gem_name}', self.curr_gem_name)
+                        if path.isfile(quelle.qml) is False: errors.append(quelle.qml)
             for subthema in subthemen:
                 if not subthema.quellen is None and len(subthema.quellen) > 0:
                     for quelle in subthema.quellen:
                         quelle.pfad = quelle.pfad.replace('{gem_name}', self.curr_gem_name)
-                        quelle.qml = quelle.qml.replace('{gem_name}', self.curr_gem_name)
                         if path.isfile(quelle.pfad) is False: errors.append(quelle.pfad)
-                        if path.isfile(quelle.qml) is False: errors.append(quelle.qml)
+                        if not quelle.qml is None:
+                            quelle.qml = quelle.qml.replace('{gem_name}', self.curr_gem_name)
+                            if path.isfile(quelle.qml) is False: errors.append(quelle.qml)
         if len(errors) > 0:
             msg = u'Diese Datenquellen sind ungültig:\n\n ' + u'\n'.join(errors)
             QMessageBox.warning(self.iface.mainWindow(), DLG_CAPTION, msg)
@@ -230,7 +239,6 @@ class VoGISRaumplanungPlotDialog(QDialog):
         #    for lyr in layers:
         #        leg.moveLayer(lyr, idx)
         return layers
-
 
     def __add_dkm_layers(self):
         dkmgem = self.json_settings.dkm_gemeinde(self.curr_gem_name)

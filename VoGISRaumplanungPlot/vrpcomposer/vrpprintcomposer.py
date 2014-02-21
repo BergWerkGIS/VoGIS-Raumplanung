@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
 """Atlas Generation"""
 
+from PyQt4.QtCore import pyqtRemoveInputHook
+import pdb
 import math
 import os
 import sys
 import traceback
 from time import strftime
+from collections import OrderedDict
 from PyQt4.QtCore import QFile
 from PyQt4.QtCore import QFileInfo
 from PyQt4.QtCore import Qt
@@ -68,7 +71,7 @@ class VRPPrintComposer:
         self.lyrname_dkm_gnr = 'DKM GNR'
         self.comp_leg = []
         self.comp_lbl = []
-        self.statistics = {}
+        self.statistics = OrderedDict()
 
     def export_all_features_TEST(self):
         lyr = QgsVectorLayer('/home/bergw/VoGIS-Raumplanung-Daten/Geodaten/Raumplanung/Flaechenwidmung/Dornbirn/Flaechenwidmungsplan/fwp_flaeche.shp', 'flaeiw', 'ogr')
@@ -174,7 +177,7 @@ class VRPPrintComposer:
             if len(self.themen) < 1:
                 composition.render(pdf_painter, paper_rect_pixel, paper_rect_mm)
             else:
-                self.statistics = {}
+                self.statistics = OrderedDict()
                 try:
                     pass
                     #lyr = QgsVectorLayer('/home/bergw/VoGIS-Raumplanung-Daten/Geodaten/Raumplanung/Flaechenwidmung/Dornbirn/Flaechenwidmungsplan/fwp_flaeche.shp', 'flaeiw', 'ogr')
@@ -198,7 +201,7 @@ class VRPPrintComposer:
                     if not sub_themen is None:
                         for sub_thema in sub_themen:
                             layers = self.__add_layers(sub_thema)
-                            self.__calculate_statistics(sub_thema, layers)
+                            self.__calculate_statistics(thema, layers)
                             if cntr > 0:
                                 printer.newPage()
                             self.__reorder_layers()
@@ -208,8 +211,31 @@ class VRPPrintComposer:
                             cntr += 1
             #output statistics
             if len(self.statistics) > 0:
+                str_flaechen = ''
+                for gnr, stats in self.statistics.iteritems():
+                    #str_flaechen += u'{0} Xm²'.format(gnr)
+                    str_flaechen += u'{0} ({1:.2f}m²) '.format(gnr, stats[0].flaeche)
                 lbls = self.__get_items(QgsComposerLabel, self.comp_textinfo)
-                self.__update_composer_items('', lbls)
+                self.__update_composer_items('', lbls, str_flaechen)
+                tabelle = self.__get_item_byid(self.comp_textinfo, 'TABELLE')
+                html = tabelle.text()
+                html += u'<table>'
+                #html += '<tr><th></th><th>KOPFZEILE</th><th></th></tr>'
+                #html += '<tr><td></td><td>text_flaeche</td><td></td></tr>'
+                for gnr, stats in self.statistics.iteritems():
+                    html += u'<tr><th></th><th>{0}</th><th></th></tr>'.format(gnr)
+                    for stat in stats:
+                        html += u'<tr><th></th><th>{0}</th><th></th></tr>'.format(stat.thema)
+                        for thema, subthema in stat.subthemen.iteritems():
+                            html += u'<tr><td class="col1">{0}</td>'.format(subthema.name)
+                            attr_val = ''
+                            attr_area = ''
+                            for text, area in subthema.txt_area.iteritems():
+                                attr_val += u'{0}<br />'.format(text)
+                                attr_area += u'{0:.2f}m² <br />'.format(area)
+                            html += u'<td class="col2">{0}</td><td class="col3">{1}</td></tr>'.format(attr_val, attr_area)
+                html += u'</table>'
+                tabelle.setText(html)
                 printer.newPage()
                 self.comp_textinfo.renderPage(pdf_painter, 0)
             #end pdf export
@@ -218,12 +244,12 @@ class VRPPrintComposer:
             msg = 'export pdf (catch all):\n\n{0}'.format(traceback.format_exc())
             QgsMessageLog.logMessage(msg, DLG_CAPTION)
             return msg
-        if VRP_DEBUG is True:
-            QgsMessageLog.logMessage(u'====== STATISTICS =========', DLG_CAPTION)
-            for gnr, stats in self.statistics.iteritems():
-                QgsMessageLog.logMessage(u'{0}:\n{1}'.format(gnr, stats.__unicode__()), DLG_CAPTION)
-                QgsMessageLog.logMessage(u'- - - - - - - - - - - - - - - - - - - - - - - -', DLG_CAPTION)
-            QgsMessageLog.logMessage(u'====== END - STATISTICS =========', DLG_CAPTION)
+        #if VRP_DEBUG is True:
+        #    QgsMessageLog.logMessage(u'====== STATISTICS =========', DLG_CAPTION)
+        #    for gnr, stats in self.statistics.iteritems():
+        #        QgsMessageLog.logMessage(u'{0}:\n{1}'.format(gnr, stats.__unicode__()), DLG_CAPTION)
+        #        QgsMessageLog.logMessage(u'- - - - - - - - - - - - - - - - - - - - - - - -', DLG_CAPTION)
+        #    QgsMessageLog.logMessage(u'====== END - STATISTICS =========', DLG_CAPTION)
 
         return None
 
@@ -233,7 +259,7 @@ class VRPPrintComposer:
             try:
                 gnr = gstk[self.settings.fld_gnr()]
                 flaeche = gstk.geometry().area()
-                gstk_stats = VRPStatistik(gnr, flaeche, self.gem_name)
+                gstk_stats = VRPStatistik(thema.name, gnr, flaeche, self.gem_name)
                 for lyr in layers:
                     lyrname = lyr.name()
                     lyr_thema = self.__get_thema_by_layername(lyrname)
@@ -252,11 +278,13 @@ class VRPPrintComposer:
                     if skip is True: continue
                     text_flaeche = self.__get_text_flaeche(gstk, lyr, lyr_quelle.attribut)
                     sub_stat = VRPStatistikSubThema(lyrname, text_flaeche)
-                    gstk_stats.add_subthema(sub_stat)
+                    gstk_stats.add_subthema(lyr_thema.name, sub_stat)
                 if gnr in self.statistics:
-                    self.statistics[gnr].subthemen.extend(gstk_stats.subthemen)
+                    #pyqtRemoveInputHook()
+                    #pdb.set_trace()
+                    self.statistics[gnr].append(gstk_stats)
                 else:
-                    self.statistics[gnr] = gstk_stats
+                    self.statistics[gnr] = [gstk_stats]
             except:
                 msg = '__calculate_statistics:\n\n{0}'.format(traceback.format_exc())
                 QgsMessageLog.logMessage(msg, DLG_CAPTION, QgsMessageLog.CRITICAL)
@@ -286,7 +314,6 @@ class VRPPrintComposer:
             text[u'Nein'] = 0
         return text
 
-
     def __get_thema_by_layername(self, lyrname):
         for thema in self.themen:
             if thema.name == lyrname:
@@ -299,7 +326,7 @@ class VRPPrintComposer:
                         return subthema
         return None
 
-    def __update_composer_items(self, oberthema, labels=None):
+    def __update_composer_items(self, oberthema, labels=None, gnrflaeche=None):
         if labels is None:
             labels = self.comp_lbl
         for leg in self.comp_leg:
@@ -308,10 +335,11 @@ class VRPPrintComposer:
             txt = lbl[1].replace('[Gemeindename]', self.gem_name)
             txt = txt.replace('[Oberthema]', oberthema)
             txt = txt.replace('[GNR]', ', '.join(self.gnrs))
+            if not gnrflaeche is None:
+                txt = txt.replace('[GNRFLAECHE]', gnrflaeche)
             txt = txt.replace('[TODAY]', strftime("%d.%m.%Y"))
             txt = txt.replace('[DATE]', self.settings.dkm_stand())
             lbl[0].setText(txt)
-
 
     def __get_items(self, typ, composition=None):
         if composition is None:
@@ -325,6 +353,9 @@ class VRPPrintComposer:
                 else:
                     items.append(item)
         return items
+
+    def __get_item_byid(self, composition, item_id):
+        return composition.getComposerItemById(item_id)
 
     def __reorder_layers(self):
         #move ortho to bottom

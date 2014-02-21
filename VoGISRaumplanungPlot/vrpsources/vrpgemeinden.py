@@ -72,7 +72,7 @@ class VRPGemeinden:
             for feat in lyr.getFeatures():
                 kgem = feat[self.json_settings.fld_kg()]
                 gnr = feat[self.json_settings.fld_gnr()]
-                gst['{0}: {1}'.format(kgem, gnr)] = {'id':feat.id(), 'kg':kgem, 'gnr':gnr, 'bbox':None }
+                gst['{0}:{1}'.format(kgem, gnr)] = {'id':feat.id(), 'kg':kgem, 'gnr':gnr, 'bbox':None }
             self.gstke[gem_name] = gst
         except AttributeError as exae:
             ex_txt = u'{0}'.format(exae.message)
