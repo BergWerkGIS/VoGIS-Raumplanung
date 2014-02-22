@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'ui_vogisraumplanungplot.ui'
 #
-# Created: Sat Feb 22 15:22:19 2014
+# Created: Sat Feb 22 15:43:38 2014
 #      by: PyQt4 UI code generator 4.10.3
 #
 # WARNING! All changes made in this file will be lost!
@@ -36,6 +36,9 @@ class Ui_VoGISRaumplanungPlot(object):
         self.label_2.setObjectName(_fromUtf8("label_2"))
         self.gridLayout.addWidget(self.label_2, 0, 1, 1, 1)
         self.LST_GSTKE = QtGui.QListWidget(VoGISRaumplanungPlot)
+        self.LST_GSTKE.setSelectionMode(QtGui.QAbstractItemView.NoSelection)
+        self.LST_GSTKE.setSelectionBehavior(QtGui.QAbstractItemView.SelectItems)
+        self.LST_GSTKE.setSelectionRectVisible(True)
         self.LST_GSTKE.setObjectName(_fromUtf8("LST_GSTKE"))
         self.gridLayout.addWidget(self.LST_GSTKE, 4, 1, 1, 1)
         self.label = QtGui.QLabel(VoGISRaumplanungPlot)
