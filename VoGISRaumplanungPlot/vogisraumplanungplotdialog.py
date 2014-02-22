@@ -40,6 +40,7 @@ from qgis.core import QgsMessageLog
 from qgis.core import QgsMapLayerRegistry
 from qgis.core import QgsVectorLayer
 from qgis.core import QgsRasterLayer
+from qgis.gui import QgsMessageBar
 from ui_vogisraumplanungplot import Ui_VoGISRaumplanungPlot
 from vrpcore.vrpsettings import VRPSettings
 from vrpcore.vrpjsonsettings import JsonSettings
@@ -68,10 +69,14 @@ class VoGISRaumplanungPlotDialog(QDialog):
         self.dkm_coverage_layer = None
         self.gstke = {}
         self.curr_gem_name = None
+        #hold kgs and gnrs if there's already a selection in the active document
+        self.autoselect_kgs = None
+        self.autoselect_gnrs = None
+
         self.__add_themen()
 
         #add Gemeinde names
-        self.gem_src = VRPGemeinden(self.s)
+        self.gem_src = VRPGemeinden(self.iface, self.s)
         QApplication.setOverrideCursor(Qt.WaitCursor)
         try:
             gem_names = self.gem_src.get_names()
@@ -91,6 +96,50 @@ class VoGISRaumplanungPlotDialog(QDialog):
         self.ui.LST_GSTKE.setBatchSize( 100 )
         self.ui.LST_GSTKE.setUniformItemSizes(True)
 
+        #check if the active layer is a DKM layer and if there are any selected features
+        if not self.iface.activeLayer() is None:
+            act_lyr = self.iface.activeLayer()
+            if isinstance(act_lyr, QgsVectorLayer):
+                sel_feats = act_lyr.selectedFeatures()
+                if len(sel_feats) > 0:
+                    fld_gemname = self.json_settings.fld_pgem_name()
+                    fld_kg = self.json_settings.fld_kg()
+                    fld_gnr = self.json_settings.fld_gnr()
+                    dkm_flds = [fld_gemname, fld_kg, fld_gnr]
+                    if all( dkm_fld in [fld.name() for fld in act_lyr.pendingFields()] for dkm_fld in dkm_flds):
+                        #self.iface.messageBar().pushMessage(u'alles da!', QgsMessageBar.INFO)
+                        self.__apply_selected_features(sel_feats, fld_gemname, fld_kg, fld_gnr)
+
+    def __apply_selected_features(self, feats, fldgem, fldkg, fldgnr):
+        msg = u''
+        gem_name = feats[0][fldgem]
+        kgs = []
+        gnrs = []
+        for feat in feats:
+            msg += u'{0}\t{1}\t{2}\n\n'.format(feat[fldgem], feat[fldkg], feat[fldgnr])
+            kgs.append(feat[fldkg])
+            gnrs.append(feat[fldgnr])
+        msg += u'Ist ' if len(feats) < 2 else u'Sind '
+        msg += u'bereits selektiert!\nSelektion übernehmen?'
+        answer = QMessageBox.question(
+                                      self.iface.mainWindow(),
+                                      DLG_CAPTION,
+                                      msg,
+                                      QMessageBox.Yes | QMessageBox.No
+                                      )
+        if QMessageBox.No == answer:
+            return
+        self.connect(self, SIGNAL('GNRS_LOADED'), self.__gnrs_loaded)
+        for idx in range(0, self.ui.LST_GEMEINDEN.count()):
+            item = self.ui.LST_GEMEINDEN.item(idx)
+            if gem_name == item.data(Qt.UserRole):
+                #item.setSelected(True)
+                self.autoselect_kgs = kgs
+                self.autoselect_gnrs = gnrs
+                self.ui.LST_GEMEINDEN.setCurrentRow(idx)
+                break
+
+
     def accept(self):
         if len(self.ui.LST_GEMEINDEN.selectedItems()) < 1:
             QMessageBox.warning(self.iface.mainWindow(), DLG_CAPTION, u'Keine Gemeinde gewählt!')
@@ -104,7 +153,7 @@ class VoGISRaumplanungPlotDialog(QDialog):
         QgsMapLayerRegistry.instance().removeAllMapLayers()
         QgsMapLayerRegistry.instance().clearAllLayerCaches()
 
-        themen = {}
+        themen = OrderedDict()
         for i in xrange(0, self.ui.TREE_THEMEN.topLevelItemCount()):
             node_thema = self.ui.TREE_THEMEN.topLevelItem(i)
             #check, if any childnodes are checked
@@ -256,6 +305,10 @@ class VoGISRaumplanungPlotDialog(QDialog):
         lyr.loadNamedStyle(dkmgem['qmlgnr'])
         QgsMapLayerRegistry.instance().addMapLayer(lyr)
 
+    def lst_gem_currentItem_changed(self, new_item, old_item):
+        if VRP_DEBUG is True: QgsMessageLog.logMessage('current item changed: {0} {1}'.format(old_item, new_item), DLG_CAPTION)
+        self.lst_gem_clicked(new_item)
+
     def lst_gem_clicked(self, item):
         QApplication.setOverrideCursor(Qt.WaitCursor)
         try:
@@ -266,6 +319,21 @@ class VoGISRaumplanungPlotDialog(QDialog):
             self.__add_gstke(self.ui.LE_GST_FILTER.text())
         finally:
             QApplication.restoreOverrideCursor()
+            self.emit(SIGNAL('GNRS_LOADED'))
+
+    def __gnrs_loaded(self):
+        if VRP_DEBUG is True: QgsMessageLog.logMessage('GNRS_LOADED fired', DLG_CAPTION)
+        self.disconnect(self, SIGNAL('GNRS_LOADED'), self.__gnrs_loaded)
+        if self.autoselect_kgs is None or self.autoselect_gnrs is None:
+            return
+        for i in range(0, self.ui.LST_GSTKE.count()):
+            item = self.ui.LST_GSTKE.item(i)
+            gstk_props = item.data(Qt.UserRole)
+            for idx, kg in enumerate(self.autoselect_kgs):
+                if kg == gstk_props['kg'] and self.autoselect_gnrs[idx] == gstk_props['gnr']:
+                    item.setCheckState(Qt.Checked)
+        self.autoselect_kgs = None
+        self.autoselect_gnrs = None
 
     def gst_text_changed(self, msg):
         self.__add_gstke(msg)

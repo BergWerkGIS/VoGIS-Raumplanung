@@ -200,8 +200,9 @@ class VRPPrintComposer:
                         cntr += 1
                     if not sub_themen is None:
                         for sub_thema in sub_themen:
+                            if VRP_DEBUG is True: QgsMessageLog.logMessage(u'drucke SubThema:{0}'.format(sub_thema.name), DLG_CAPTION)
                             layers = self.__add_layers(sub_thema)
-                            self.__calculate_statistics(thema, layers)
+                            self.__calculate_statistics(thema, sub_thema, layers)
                             if cntr > 0:
                                 printer.newPage()
                             self.__reorder_layers()
@@ -211,55 +212,99 @@ class VRPPrintComposer:
                             cntr += 1
             #output statistics
             if len(self.statistics) > 0:
-                str_flaechen = ''
-                for gnr, stats in self.statistics.iteritems():
-                    #str_flaechen += u'{0} Xm²'.format(gnr)
-                    str_flaechen += u'{0} ({1:.2f}m²) '.format(gnr, stats[0].flaeche)
-                lbls = self.__get_items(QgsComposerLabel, self.comp_textinfo)
-                self.__update_composer_items('', lbls, str_flaechen)
                 tabelle = self.__get_item_byid(self.comp_textinfo, 'TABELLE')
-                html = tabelle.text()
-                html += u'<table>'
-                #html += '<tr><th></th><th>KOPFZEILE</th><th></th></tr>'
-                #html += '<tr><td></td><td>text_flaeche</td><td></td></tr>'
-                for gnr, stats in self.statistics.iteritems():
-                    html += u'<tr><th></th><th>{0}</th><th></th></tr>'.format(gnr)
-                    for stat in stats:
-                        html += u'<tr><th></th><th>{0}</th><th></th></tr>'.format(stat.thema)
-                        for thema, subthema in stat.subthemen.iteritems():
-                            html += u'<tr><td class="col1">{0}</td>'.format(subthema.name)
-                            attr_val = ''
-                            attr_area = ''
-                            for text, area in subthema.txt_area.iteritems():
-                                attr_val += u'{0}<br />'.format(text)
-                                attr_area += u'{0:.2f}m² <br />'.format(area)
-                            html += u'<td class="col2">{0}</td><td class="col3">{1}</td></tr>'.format(attr_val, attr_area)
-                html += u'</table>'
-                tabelle.setText(html)
-                printer.newPage()
-                self.comp_textinfo.renderPage(pdf_painter, 0)
-            #end pdf export
-            pdf_painter.end()
+                if tabelle is None:
+                    self.iface.messageBar().pushMessage(u'Kein Textelement mit ID "TABELLE" vorhanden.', QgsMessageBar.CRITICAL)
+                else:
+                    try:
+                        str_flaechen = ''
+                        idx = 0
+                        for gnr, stats in self.statistics.iteritems():
+                            comma = ', ' if idx > 0 else ''
+                            str_flaechen += u'{0}{1}({2:.2f}m²)'.format(comma, gnr, stats[0].flaeche)
+                            idx += 1
+                        lbls = self.__get_items(QgsComposerLabel, self.comp_textinfo)
+                        self.__update_composer_items('', lbls, str_flaechen)
+                        html = tabelle.text()
+                        html += u'<table>'
+                        #html += '<tr><th></th><th>KOPFZEILE</th><th></th></tr>'
+                        #html += '<tr><td></td><td>text_flaeche</td><td></td></tr>'
+                        for gnr, stats in self.statistics.iteritems():
+                            html += u'<tr><th class="gnr"></th><th class="gnr">{0}</th><th class="gnr"></th></tr>'.format(gnr)
+                            curr_thema = ''
+                            for stat in stats:
+                                if stat.thema != curr_thema:
+                                    html += u'<tr><th class="thema"></th><th class="thema">{0}</th><th class="thema"></th></tr>'.format(stat.thema)
+                                curr_thema = stat.thema
+                                for thema, subthema in stat.subthemen.iteritems():
+                                    for quelle in subthema:
+                                        html += u'<tr><td class="col1">{0}</td>'.format(quelle.name)
+                                        attr_val = ''
+                                        attr_area = ''
+                                        for text, area in quelle.txt_area.iteritems():
+                                            attr_val += u'{0}<br />'.format(text)
+                                            attr_area += u'{0:.2f}m² <br />'.format(area)
+                                        html += u'<td class="col2">{0}</td><td class="col3">{1}</td></tr>'.format(attr_val, attr_area)
+                        html += u'</table>'
+                        tabelle.setText(html)
+                        printer.newPage()
+                        self.comp_textinfo.renderPage(pdf_painter, 0)
+                    except:
+                        msg = 'Statistikausgabe:\n\n{0}'.format(traceback.format_exc())
+                        QgsMessageLog.logMessage(msg, DLG_CAPTION)
+                        self.iface.messageBar().pushMessage(msg, QgsMessageBar.CRITICAL)
         except:
             msg = 'export pdf (catch all):\n\n{0}'.format(traceback.format_exc())
             QgsMessageLog.logMessage(msg, DLG_CAPTION)
+            self.iface.messageBar().pushMessage(msg.replace(u'\n', u''), QgsMessageBar.CRITICAL)
             return msg
-        #if VRP_DEBUG is True:
-        #    QgsMessageLog.logMessage(u'====== STATISTICS =========', DLG_CAPTION)
-        #    for gnr, stats in self.statistics.iteritems():
-        #        QgsMessageLog.logMessage(u'{0}:\n{1}'.format(gnr, stats.__unicode__()), DLG_CAPTION)
-        #        QgsMessageLog.logMessage(u'- - - - - - - - - - - - - - - - - - - - - - - -', DLG_CAPTION)
-        #    QgsMessageLog.logMessage(u'====== END - STATISTICS =========', DLG_CAPTION)
-
+        finally:
+            #end pdf export
+            pdf_painter.end()
         return None
 
-    def __calculate_statistics(self, thema, layers):
+    def __calculate_statistics(self, thema, subthema, layers):
         features = processing.features(self.coverage_layer)
         for gstk in features:
             try:
                 gnr = gstk[self.settings.fld_gnr()]
                 flaeche = gstk.geometry().area()
-                gstk_stats = VRPStatistik(thema.name, gnr, flaeche, self.gem_name)
+                gstk_stats = VRPStatistik(gnr, thema.name, flaeche, self.gem_name)
+                #pyqtRemoveInputHook()
+                #pdb.set_trace()
+                #go thru all data sources of subthema
+                for quelle in subthema.quellen:
+                    if VRP_DEBUG is True: QgsMessageLog.logMessage(u'quelle:{0}'.format(quelle.name), DLG_CAPTION)
+                    #only use those with statistik == True
+                    if quelle.statistik is False:
+                        continue
+                    lyr_curr_quelle = None
+                    for lyr in layers:
+                        if quelle.name == lyr.name():
+                            lyr_curr_quelle = lyr
+                    if lyr_curr_quelle is None:
+                        continue
+                    text_flaeche = self.__get_text_flaeche(gstk, lyr_curr_quelle, quelle.attribut)
+                    sub_stat = VRPStatistikSubThema(quelle.name, text_flaeche)
+                    gstk_stats.add_subthema(thema.name, sub_stat)
+                if gnr in self.statistics:
+                    self.statistics[gnr].append(gstk_stats)
+                else:
+                    self.statistics[gnr] = [gstk_stats]
+            except:
+                msg = '__calculate_statistics:\n\n{0}'.format(traceback.format_exc())
+                QgsMessageLog.logMessage(msg, DLG_CAPTION, QgsMessageLog.CRITICAL)
+                msg = msg.replace('\n', '')
+                self.iface.messageBar().pushMessage(msg,  QgsMessageBar.CRITICAL)
+                return
+
+    def __calculate_statistics_ALT(self, thema, layers):
+        features = processing.features(self.coverage_layer)
+        for gstk in features:
+            try:
+                gnr = gstk[self.settings.fld_gnr()]
+                flaeche = gstk.geometry().area()
+                gstk_stats = VRPStatistik(gnr, thema.name, flaeche, self.gem_name)
                 for lyr in layers:
                     lyrname = lyr.name()
                     lyr_thema = self.__get_thema_by_layername(lyrname)
@@ -268,26 +313,28 @@ class VRPPrintComposer:
                     skip = False
                     lyr_quelle = None
                     for quelle in lyr_thema.quellen:
-                        if VRP_DEBUG is True: QgsMessageLog.logMessage(u'quelle:{0}, statistik:{1}'.format(quelle.name, quelle.statistik), DLG_CAPTION)
+                        if VRP_DEBUG is True:
+                            QgsMessageLog.logMessage(u'quelle.name:{0}, lyrname:{1}'.format(quelle.name, lyrname), DLG_CAPTION)
+                            QgsMessageLog.logMessage(u'quelle:{0}, statistik:{1}'.format(quelle.name, quelle.statistik), DLG_CAPTION)
                         if quelle.name == lyrname and quelle.statistik is False:
-                            skip = True
-                            break
+                            if VRP_DEBUG is True: QgsMessageLog.logMessage(u'continue', DLG_CAPTION)
+                            continue
                         elif quelle.name == lyrname and quelle.statistik is True:
+                            if VRP_DEBUG is True: QgsMessageLog.logMessage(u'lyr_quelle = quelle', DLG_CAPTION)
                             lyr_quelle = quelle
-                            break
-                    if skip is True: continue
-                    text_flaeche = self.__get_text_flaeche(gstk, lyr, lyr_quelle.attribut)
-                    sub_stat = VRPStatistikSubThema(lyrname, text_flaeche)
-                    gstk_stats.add_subthema(lyr_thema.name, sub_stat)
+                        if VRP_DEBUG is True: QgsMessageLog.logMessage(u'lyr_quelle:{0}'.format(lyr_quelle), DLG_CAPTION)
+                        if not lyr_quelle is None:
+                            text_flaeche = self.__get_text_flaeche(gstk, lyr, lyr_quelle.attribut)
+                            sub_stat = VRPStatistikSubThema(lyrname, text_flaeche)
+                            gstk_stats.add_subthema(lyr_thema.name, sub_stat)
                 if gnr in self.statistics:
-                    #pyqtRemoveInputHook()
-                    #pdb.set_trace()
                     self.statistics[gnr].append(gstk_stats)
                 else:
                     self.statistics[gnr] = [gstk_stats]
             except:
                 msg = '__calculate_statistics:\n\n{0}'.format(traceback.format_exc())
                 QgsMessageLog.logMessage(msg, DLG_CAPTION, QgsMessageLog.CRITICAL)
+                msg = msg.replace('\n', '')
                 self.iface.messageBar().pushMessage(msg,  QgsMessageBar.CRITICAL)
                 return
 

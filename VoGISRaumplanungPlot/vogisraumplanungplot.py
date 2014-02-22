@@ -33,6 +33,7 @@ from vrpcore.constvals import *
 class VoGISRaumplanungPlot:
 
     def __init__(self, iface):
+        QgsMessageLog.logMessage(u'{0}: initialisiere'.format(DLG_CAPTION), DLG_CAPTION)
         self.iface = iface
         self.plugin_dir = os.path.dirname(__file__)
 

@@ -16,7 +16,10 @@ class VRPStatistik:
 
     def add_subthema(self, thema_name, subthema):
         """add subthema"""
-        self.subthemen[thema_name] = subthema
+        if thema_name in self.subthemen:
+            self.subthemen[thema_name].append(subthema)
+        else:
+            self.subthemen[thema_name] = [subthema]
 
     def __str__(self):
         asstr = '{1}{0}{2}{0}{3:.2f}'.format('\t', self.gem_name, self.gnr, self.flaeche)

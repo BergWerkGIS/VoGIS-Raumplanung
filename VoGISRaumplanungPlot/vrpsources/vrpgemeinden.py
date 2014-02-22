@@ -4,6 +4,7 @@ import sys
 from os import path
 from qgis.core import QgsMessageLog
 from qgis.core import QgsVectorLayer
+from qgis.gui import QgsMessageBar
 from ..vrpcore.constvals import *
 from ..vrpcore.vrpjsonsettings import JsonSettings
 
@@ -13,7 +14,8 @@ class VRPGemeinden:
     Either from cache file or from shape file.
     """
 
-    def __init__(self, settings):
+    def __init__(self, iface, settings):
+        self.iface = iface
         #if self.qgis_settingsVRP_DEBUG is True: print QgsMessageLog.logMessage(u'import: {0}'.format(dir(vrpcore)), self.qgis_settingsDLG_CAPTION)
         if VRP_DEBUG is True: print QgsMessageLog.logMessage(u'import: {0}'.format(dir(JsonSettings)), DLG_CAPTION)
         self.qgis_settings = settings
@@ -36,13 +38,14 @@ class VRPGemeinden:
                     if row:
                         gem_names.append(row)
         except:
+            self.iface.messageBar().pushMessage(u'Liste mit Gemeindenamen wird neu erstellt.', QgsMessageBar.INFO)
             if VRP_DEBUG is True:
                 QgsMessageLog.logMessage('exception: cannot read cached GEMEINDENAMEN', DLG_CAPTION)
                 QgsMessageLog.logMessage(self.file_gemeinden, DLG_CAPTION)
             lyr = QgsVectorLayer(self.dkm_gesamt_filename, 'XYZ', 'ogr')
             #start = time.clock()
             for feat in lyr.getFeatures():
-                gem_name = feat['PGEM_NAME']
+                gem_name = feat[self.json_settings.fld_pgem_name()]
                 if not gem_name in gem_names:
                     gem_names.append(gem_name)
             #step = time.clock()
@@ -53,6 +56,7 @@ class VRPGemeinden:
                 with open(self.file_gemeinden, 'w') as cfile:
                     cfile.write('\n'.join(gem_names))
             except:
+                self.iface.messageBar().pushMessage(u'Liste mit Gemeindenamen konnte nicht gespeichert werden.', QgsMessageBar.CRITICAL)
                 gem_names = [self.file_gemeinden, 'FEHLER BEIM SPEICHERN DER GEMEINDENAMEN!']
 
         return gem_names

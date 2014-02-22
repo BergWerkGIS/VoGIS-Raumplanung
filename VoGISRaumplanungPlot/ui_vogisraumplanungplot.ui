@@ -173,9 +173,26 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>LST_GEMEINDEN</sender>
+   <signal>currentItemChanged(QListWidgetItem*,QListWidgetItem*)</signal>
+   <receiver>VoGISRaumplanungPlot</receiver>
+   <slot>lst_gem_currentItem_changed(QListWidgetItem, QListWidgetItem)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>112</x>
+     <y>366</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>5</x>
+     <y>481</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>gst_text_changed(QString)</slot>
   <slot>lst_themen_item_changed(QTreeWidgetItem,int)</slot>
+  <slot>lst_gem_currentItem_changed(QListWidgetItem, QListWidgetItem)</slot>
  </slots>
 </ui>

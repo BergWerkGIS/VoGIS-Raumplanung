@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 """Class for reading JsonSettings"""
 
-import json
+try:
+    import simplejson as json
+except ImportError:
+    import json
 from collections import OrderedDict
 #from ..vrpbo.vrpbothema import VRPQuelle
 from ..vrpbo.vrpbothema import VRPThema
@@ -19,6 +22,9 @@ class JsonSettings:
         #self.json = json.load(json_file)
         self.json = json.loads(json_txt)
 
+    def fld_pgem_name(self):
+        """Attribute field with commune name"""
+        return self.json['pgemnamefeld']
     def fld_kg(self):
         """Attribute field with KG number"""
         return self.json['kgfeld']
