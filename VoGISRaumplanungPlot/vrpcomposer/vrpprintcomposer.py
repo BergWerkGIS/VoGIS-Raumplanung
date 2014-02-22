@@ -191,18 +191,8 @@ class VRPPrintComposer:
                     if VRP_DEBUG is True: QgsMessageLog.logMessage('drucke Thema:{0}'.format(thema.name), DLG_CAPTION)
                     if sub_themen is None:
                         layers = self.__add_layers(thema)
-                        if cntr > 0:
-                            printer.newPage()
-                        self.__reorder_layers()
-                        self.__update_composer_items(thema.name)
-                        composition.renderPage(pdf_painter, 0)
-                        QgsMapLayerRegistry.instance().removeMapLayers([lyr.id() for lyr in layers])
-                        cntr += 1
-                    if not sub_themen is None:
-                        for sub_thema in sub_themen:
-                            if VRP_DEBUG is True: QgsMessageLog.logMessage(u'drucke SubThema:{0}'.format(sub_thema.name), DLG_CAPTION)
-                            layers = self.__add_layers(sub_thema)
-                            self.__calculate_statistics(thema, sub_thema, layers)
+                        #no qml -> not visible -> means no map
+                        if self.__at_least_one_visible(layers) is True:
                             if cntr > 0:
                                 printer.newPage()
                             self.__reorder_layers()
@@ -210,11 +200,29 @@ class VRPPrintComposer:
                             composition.renderPage(pdf_painter, 0)
                             QgsMapLayerRegistry.instance().removeMapLayers([lyr.id() for lyr in layers])
                             cntr += 1
+                        else:
+                            QgsMapLayerRegistry.instance().removeMapLayers([lyr.id() for lyr in layers])
+                    if not sub_themen is None:
+                        for sub_thema in sub_themen:
+                            if VRP_DEBUG is True: QgsMessageLog.logMessage(u'drucke SubThema:{0}'.format(sub_thema.name), DLG_CAPTION)
+                            layers = self.__add_layers(sub_thema)
+                            self.__calculate_statistics(thema, sub_thema, layers)
+                            #no qml -> not visible -> means no map
+                            if self.__at_least_one_visible(layers) is True:
+                                if cntr > 0:
+                                    printer.newPage()
+                                self.__reorder_layers()
+                                self.__update_composer_items(thema.name)
+                                composition.renderPage(pdf_painter, 0)
+                                QgsMapLayerRegistry.instance().removeMapLayers([lyr.id() for lyr in layers])
+                                cntr += 1
+                            else:
+                                QgsMapLayerRegistry.instance().removeMapLayers([lyr.id() for lyr in layers])
             #output statistics
             if len(self.statistics) > 0:
                 tabelle = self.__get_item_byid(self.comp_textinfo, 'TABELLE')
                 if tabelle is None:
-                    self.iface.messageBar().pushMessage(u'Kein Textelement mit ID "TABELLE" vorhanden.', QgsMessageBar.CRITICAL)
+                    self.iface.messageBar().pushMessage(u'Layout (Textinfo): Kein Textelement mit ID "TABELLE" vorhanden.', QgsMessageBar.CRITICAL)
                 else:
                     try:
                         str_flaechen = ''
@@ -263,6 +271,18 @@ class VRPPrintComposer:
             pdf_painter.end()
         return None
 
+    def __at_least_one_visible(self, layers):
+        """
+        check, if at least one layer is visible
+        layers are not visible, if they don't have a qml
+        if there is no visible layer, there must not be an extra plot page
+        """
+        one_visible = False
+        for lyr in layers:
+            if self.legiface.isLayerVisible(lyr):
+                one_visible = True
+        return one_visible
+
     def __calculate_statistics(self, thema, subthema, layers):
         features = processing.features(self.coverage_layer)
         for gstk in features:
@@ -284,7 +304,7 @@ class VRPPrintComposer:
                             lyr_curr_quelle = lyr
                     if lyr_curr_quelle is None:
                         continue
-                    text_flaeche = self.__get_text_flaeche(gstk, lyr_curr_quelle, quelle.attribut)
+                    text_flaeche = self.__get_text_flaeche(quelle, gstk, lyr_curr_quelle, quelle.attribut)
                     sub_stat = VRPStatistikSubThema(quelle.name, text_flaeche)
                     gstk_stats.add_subthema(thema.name, sub_stat)
                 if gnr in self.statistics:
@@ -298,47 +318,7 @@ class VRPPrintComposer:
                 self.iface.messageBar().pushMessage(msg,  QgsMessageBar.CRITICAL)
                 return
 
-    def __calculate_statistics_ALT(self, thema, layers):
-        features = processing.features(self.coverage_layer)
-        for gstk in features:
-            try:
-                gnr = gstk[self.settings.fld_gnr()]
-                flaeche = gstk.geometry().area()
-                gstk_stats = VRPStatistik(gnr, thema.name, flaeche, self.gem_name)
-                for lyr in layers:
-                    lyrname = lyr.name()
-                    lyr_thema = self.__get_thema_by_layername(lyrname)
-                    if VRP_DEBUG is True: QgsMessageLog.logMessage(u'lyrname:{0}, lyr_thema:{1}'.format(lyrname, lyr_thema), DLG_CAPTION)
-                    if lyr_thema is None: continue
-                    skip = False
-                    lyr_quelle = None
-                    for quelle in lyr_thema.quellen:
-                        if VRP_DEBUG is True:
-                            QgsMessageLog.logMessage(u'quelle.name:{0}, lyrname:{1}'.format(quelle.name, lyrname), DLG_CAPTION)
-                            QgsMessageLog.logMessage(u'quelle:{0}, statistik:{1}'.format(quelle.name, quelle.statistik), DLG_CAPTION)
-                        if quelle.name == lyrname and quelle.statistik is False:
-                            if VRP_DEBUG is True: QgsMessageLog.logMessage(u'continue', DLG_CAPTION)
-                            continue
-                        elif quelle.name == lyrname and quelle.statistik is True:
-                            if VRP_DEBUG is True: QgsMessageLog.logMessage(u'lyr_quelle = quelle', DLG_CAPTION)
-                            lyr_quelle = quelle
-                        if VRP_DEBUG is True: QgsMessageLog.logMessage(u'lyr_quelle:{0}'.format(lyr_quelle), DLG_CAPTION)
-                        if not lyr_quelle is None:
-                            text_flaeche = self.__get_text_flaeche(gstk, lyr, lyr_quelle.attribut)
-                            sub_stat = VRPStatistikSubThema(lyrname, text_flaeche)
-                            gstk_stats.add_subthema(lyr_thema.name, sub_stat)
-                if gnr in self.statistics:
-                    self.statistics[gnr].append(gstk_stats)
-                else:
-                    self.statistics[gnr] = [gstk_stats]
-            except:
-                msg = '__calculate_statistics:\n\n{0}'.format(traceback.format_exc())
-                QgsMessageLog.logMessage(msg, DLG_CAPTION, QgsMessageLog.CRITICAL)
-                msg = msg.replace('\n', '')
-                self.iface.messageBar().pushMessage(msg,  QgsMessageBar.CRITICAL)
-                return
-
-    def __get_text_flaeche(self, gstk, layer, fld_name):
+    def __get_text_flaeche(self, quelle, gstk, layer, fld_name):
         text = {}
         #performance! filter by bb of gstk first
         feat_req = QgsFeatureRequest()
@@ -350,6 +330,16 @@ class VRPPrintComposer:
                     attr_val = u'Ja'
                 else:
                     attr_val = feat[fld_name]
+                    #convert everything to string
+                    #JSON only allows for string keys -> settingsfile
+                    if isinstance( attr_val, (int, long)):
+                        attr_val = unicode(attr_val)
+                    elif isinstance(attr_val, float):
+                        attr_val = u'{0:.0f}'.format(attr_val)
+                #replace attribute values with mapping text from settings file
+                if not quelle.text is None:
+                    if attr_val in quelle.text:
+                        attr_val = quelle.text[attr_val]
                 flaeche = feat.geometry().intersection(gstk.geometry()).area()
                 if fld_name in text:
                     text[attr_val] += flaeche
@@ -510,6 +500,11 @@ class VRPPrintComposer:
                 if not qml is None:
                     lyr.loadNamedStyle(qml)
                 QgsMapLayerRegistry.instance().addMapLayer(lyr)
+                #turn off layer, if no qml present
+                #for layer that should not be displayed but should be
+                #used for statistics
+                if qml is None:
+                    self.legiface.setLayerVisible(lyr, False)
                 layers.append(lyr)
             return layers
         except:

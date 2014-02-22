@@ -116,10 +116,10 @@ class VoGISRaumplanungPlotDialog(QDialog):
         kgs = []
         gnrs = []
         for feat in feats:
-            msg += u'{0}\t{1}\t{2}\n\n'.format(feat[fldgem], feat[fldkg], feat[fldgnr])
+            msg += u'{0}\t{1}\t{2}\n'.format(feat[fldgem], feat[fldkg], feat[fldgnr])
             kgs.append(feat[fldkg])
             gnrs.append(feat[fldgnr])
-        msg += u'Ist ' if len(feats) < 2 else u'Sind '
+        msg += u'\nIst ' if len(feats) < 2 else u'\nSind '
         msg += u'bereits selektiert!\nSelektion übernehmen?'
         answer = QMessageBox.question(
                                       self.iface.mainWindow(),
