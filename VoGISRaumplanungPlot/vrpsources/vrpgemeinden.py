@@ -14,14 +14,15 @@ class VRPGemeinden:
     Either from cache file or from shape file.
     """
 
-    def __init__(self, iface, settings):
+    def __init__(self, iface, settings, jsonsettings):
         self.iface = iface
         #if self.qgis_settingsVRP_DEBUG is True: print QgsMessageLog.logMessage(u'import: {0}'.format(dir(vrpcore)), self.qgis_settingsDLG_CAPTION)
         if VRP_DEBUG is True: print QgsMessageLog.logMessage(u'import: {0}'.format(dir(JsonSettings)), DLG_CAPTION)
         self.qgis_settings = settings
         self.file_settings = self.qgis_settings.read(self.qgis_settings.key_file_settings)
         self.file_gemeinden = self.qgis_settings.read(self.qgis_settings.key_file_gemeinden)
-        self.json_settings = JsonSettings(self.file_settings)
+        #self.json_settings = JsonSettings(self.file_settings)
+        self.json_settings = jsonsettings
         self.dkm_gesamt_filename = self.json_settings.dkm_gesamt()
         stand = self.json_settings.dkm_stand()
         if VRP_DEBUG is True: print QgsMessageLog.logMessage(u'DKM Stand: {0}'.format(stand), DLG_CAPTION)

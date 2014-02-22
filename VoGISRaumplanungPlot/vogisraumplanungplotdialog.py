@@ -60,7 +60,7 @@ class VoGISRaumplanungPlotDialog(QDialog):
         self.ui.setupUi(self)
 
         try:
-            self.json_settings = JsonSettings(self.s.read(self.s.key_file_settings))
+            self.json_settings = JsonSettings(self.iface, self.s.read(self.s.key_file_settings))
         except:
             msg = u'Einstellungsdatei konnte nicht geladen werden!\nBitte die Datei auf korrektes JSON-Format überprüfen.\n\n\nFehlerprotokoll:\n{0}'.format(traceback.format_exc())
             QMessageBox.warning(self.iface.mainWindow(), DLG_CAPTION, msg)
@@ -76,7 +76,7 @@ class VoGISRaumplanungPlotDialog(QDialog):
         self.__add_themen()
 
         #add Gemeinde names
-        self.gem_src = VRPGemeinden(self.iface, self.s)
+        self.gem_src = VRPGemeinden(self.iface, self.s, self.json_settings)
         QApplication.setOverrideCursor(Qt.WaitCursor)
         try:
             gem_names = self.gem_src.get_names()

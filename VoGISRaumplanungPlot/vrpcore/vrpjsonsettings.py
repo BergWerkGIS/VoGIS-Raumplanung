@@ -1,26 +1,43 @@
 # -*- coding: utf-8 -*-
 """Class for reading JsonSettings"""
 
+import time
+from collections import OrderedDict
+from qgis.core import QgsMessageLog
+#from ..vrpbo.vrpbothema import VRPQuelle
+from ..vrpbo.vrpbothema import VRPThema
+from ..vrpbo.vrpbolayout import VRPLayout
+from ..vrpcore.constvals import *
 try:
     import simplejson as json
 except ImportError:
     import json
-from collections import OrderedDict
-#from ..vrpbo.vrpbothema import VRPQuelle
-from ..vrpbo.vrpbothema import VRPThema
-from ..vrpbo.vrpbolayout import VRPLayout
 
 class JsonSettings:
     """Class for reading JsonSettings"""
 
-    def __init__(self, filename):
+    def __init__(self, iface, filename):
+        self.iface = iface
         json_txt = ''
+        time_start = time.time()
         json_file = open(filename, 'r')
+        time_before_read_file = time.time()
         for line in json_file:
             if line.strip().startswith('//') is False:
                 json_txt += line
+        time_after_read_file = time.time()
         #self.json = json.load(json_file)
+        time_before_decode_json = time.time()
         self.json = json.loads(json_txt)
+        time_after_decode_json = time.time()
+        if VRP_DEBUG is True:
+            span_read_file = time_after_read_file - time_before_read_file
+            span_decode_json = time_after_decode_json - time_before_decode_json
+            span_initialization = time_after_decode_json - time_start
+            QgsMessageLog.logMessage('JsonSettings (read file): {0:.3f}'.format(span_read_file), DLG_CAPTION)
+            QgsMessageLog.logMessage('JsonSettings (decode json): {0:.3f}'.format(span_decode_json), DLG_CAPTION)
+            QgsMessageLog.logMessage('JsonSettings (initialization): {0:.3f}'.format(span_initialization), DLG_CAPTION)
+
 
     def fld_pgem_name(self):
         """Attribute field with commune name"""
