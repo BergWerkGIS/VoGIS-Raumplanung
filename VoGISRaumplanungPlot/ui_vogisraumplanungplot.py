@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'ui_vogisraumplanungplot.ui'
 #
-# Created: Sat Feb 22 15:11:21 2014
+# Created: Sat Feb 22 15:22:19 2014
 #      by: PyQt4 UI code generator 4.10.3
 #
 # WARNING! All changes made in this file will be lost!
