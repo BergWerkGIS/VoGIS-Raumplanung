@@ -18,7 +18,7 @@ from PyQt4.QtCore import QSizeF
 from PyQt4.QtGui import QPrinter
 from PyQt4.QtGui import QPainter
 from PyQt4.QtGui import QTreeWidget
-import processing
+#import processing
 from qgis.core import QgsComposerLabel
 from qgis.core import QgsComposerLegend
 from qgis.core import QgsComposition
@@ -284,7 +284,8 @@ class VRPPrintComposer:
         return one_visible
 
     def __calculate_statistics(self, thema, subthema, layers):
-        features = processing.features(self.coverage_layer)
+        #features = processing.features(self.coverage_layer)
+        features = self.coverage_layer.selectedFeatures()
         for gstk in features:
             try:
                 gnr = gstk[self.settings.fld_gnr()]
