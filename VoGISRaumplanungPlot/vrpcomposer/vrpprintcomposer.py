@@ -267,8 +267,9 @@ class VRPPrintComposer:
             self.iface.messageBar().pushMessage(msg.replace(u'\n', u''), QgsMessageBar.CRITICAL)
             return msg
         finally:
-            #end pdf export
-            pdf_painter.end()
+            #end pdf
+            if not pdf_painter is None:
+                pdf_painter.end()
         return None
 
     def __at_least_one_visible(self, layers):
