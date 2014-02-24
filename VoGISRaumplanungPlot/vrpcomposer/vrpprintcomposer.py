@@ -79,6 +79,7 @@ class VRPPrintComposer:
         QgsMapLayerRegistry.instance().addMapLayer(lyr)
 
     def export_all_features(self):
+        pdf_painter = None
         """Export map to pdf atlas style (one page per feature)"""
         if VRP_DEBUG is True: QgsMessageLog.logMessage(u'exporting map', DLG_CAPTION)
         try:
