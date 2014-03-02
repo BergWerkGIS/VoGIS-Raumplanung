@@ -130,7 +130,10 @@ class VRPPrintComposer:
 
 
             new_ext = bbox
-            compmap = composition.composerMapItems()[0]
+            if QGis.QGIS_VERSION_INT > 20200:
+                compmap = composition.getComposerMapById(0)
+            else:
+                compmap = composition.composerMapItems()[0]
             #taken from QgsComposerMap::setNewAtlasFeatureExtent (not yet available in QGIS 2.0)
             #http://www.qgis.org/api/qgscomposermap_8cpp_source.html#l00610
             old_ratio = compmap.rect().width() / compmap.rect().height()
