@@ -19,6 +19,7 @@ from PyQt4.QtGui import QPrinter
 from PyQt4.QtGui import QPainter
 from PyQt4.QtGui import QTreeWidget
 #import processing
+from qgis.core import QGis
 from qgis.core import QgsComposerMap
 from qgis.core import QgsComposerLabel
 from qgis.core import QgsComposerLegend
