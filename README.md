@@ -1,11 +1,15 @@
-VoGIS-Raumplanung Plot
-=================
+#VoGIS-Raumplanung Plot
 
-!!! WORK IN PROGRESS - NOT READY FOR DEPLOYMENT !!!
+QGIS PlugIn to create plots from cadastral data.
 
-QGIS PlugIn to create plots from cadestral data.
+##Developed on behalf of:
 
-In development on behalf of:
-Amt der Vorarlberger Landesregierung, Landesamt für Raumplanung und Baurecht:
+[Amt der Vorarlberger Landesregierung, Landesamt für Raumplanung und Baurecht.](http://www.vorarlberg.at/vorarlberg/bauen_wohnen/bauen/raumplanungundbaurecht/start.htm)
 
-http://www.vorarlberg.at/vorarlberg/bauen_wohnen/bauen/raumplanungundbaurecht/start.htm
+##Prerequisites
+This plugin was developed for special needs and data structures. It cannot be used with these out of the box.
+* [settings file](/settings-and-output/settings.json)
+* ortho/satellite image
+* shapefiles with cadastral data
+
+![VoGIS Raumplanung Main Dialog](/screenshots/maindialog.png)

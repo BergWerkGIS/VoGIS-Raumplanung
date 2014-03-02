@@ -1,0 +1,86 @@
+{
+    //shapefile field with name of commune
+    "pgemnamefeld":"",
+    //shapefile field with cadestral number
+    "kgfeld":"KG",
+    //shapefile field with parcel number
+    "gnrfeld":"",
+    //date to be inserted into placeholder [DATE]
+    "dkmstand":"",
+    //path to DKM of whole Vorarlberg
+    "dkmgesamt":{
+        "name":"",
+        "pfad":""
+    },
+    //paths to shapefiles and style files of communes
+    //{gem_name} will be replaced with selected commune name
+    "dkmgemeinde":{
+        "lyrnamegstk":"",
+        "shpgstk":"",
+        "qmlgstk":"",
+        "lyrnamegnr":"",
+        "shpgnr":"",
+        "qmlgnr":""
+    },
+    //path to ortho image
+    "luftbild":{
+        "lyrname":"",
+        "pfad":""
+    },
+    //path to layout for statistical text information
+    "textinfolayout":"",
+    //names and paths of selectable plot layouts
+    "composerlayouts":[{
+            "name":"",
+            "pfad":""
+        },{
+            "name":"",
+            "pfad":""
+        }
+    ],
+    //list of topics and subtopics
+    //a topic may have [0..*] subtopics
+    //a topic/subtopic must have a name and at least one 'quelle' (= datasource)
+    //topic parameters:
+    //  * name [1]: name in dialogs and statistics
+    //  * subthemen [1..*]: subtopics
+    //subtopic parameters:
+    //  * name [1]: name in dialogs and statistcis
+    //  * quellen [1..*]: data sources that define the subtopic
+    //quellen parameters:
+    //  * name [0..1]: name in dialogs, statistics and layers. if not defined subtopic name is used
+    //  * pfad [1]: path to the shapefile, {gem_name} will be replaced with selected commune name
+    //  * qml [0..1]: path to the style file, {gem_name} will be replaced with selected commune name
+    //                if there is no qml defined, the layer will not be included in the map output
+    //                but it will be included in the statistics if statistics:true
+    //  * statistik [0..1]: determines if this layer shows up in the statistics
+    //                      if omitted, defaults to 'false'
+    //  * filter [0..1]: filter expression to filter the topic layer for display and statistics
+    //  * attribut [0..1]: values of this attribute field are displayed in the statistics
+    //                     if omitted: Ja/Nein (Yes/No) will be used
+    //  * text [0..1]: dictionary of mapping values for 'attribut' field
+    "themen":[
+        {
+            "name":"",
+            "subthemen":[
+                {
+                    "name":"",
+                    "quellen":[
+                        {
+                            "name":"",
+                            "pfad":"",
+                            "qml":"",
+                            "statistik":true,
+                            "filter":"",
+                            "attribut":"",
+                            "text":{
+                                "":"",
+                                "":""
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
