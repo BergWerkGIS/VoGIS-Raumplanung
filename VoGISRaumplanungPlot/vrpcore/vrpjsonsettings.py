@@ -60,19 +60,32 @@ class JsonSettings:
 
     def dkm_gemeinde(self, gem_name):
         """Path to DKM shapefile for specific Gemeinde"""
+        lyrnamegstk = self.json['dkmgemeinde']['lyrnamegstk']
         shpgstk = self.json['dkmgemeinde']['shpgstk']
         shpgstk = shpgstk.replace('{gem_name}', gem_name)
         qmlgstk = self.json['dkmgemeinde']['qmlgstk']
         qmlgstk = qmlgstk.replace('{gem_name}', gem_name)
+        lyrnamegnr = self.json['dkmgemeinde']['lyrnamegnr']
         shpgnr = self.json['dkmgemeinde']['shpgnr']
         shpgnr = shpgnr.replace('{gem_name}', gem_name)
         qmlgnr = self.json['dkmgemeinde']['qmlgnr']
         qmlgnr = qmlgnr.replace('{gem_name}', gem_name)
-        return {'shpgstk':shpgstk, 'qmlgstk':qmlgstk, 'shpgnr':shpgnr, 'qmlgnr':qmlgnr}
+        return {
+                'lyrnamegstk':lyrnamegstk,
+                'shpgstk':shpgstk,
+                'qmlgstk':qmlgstk,
+                'lyrnamegnr':lyrnamegnr,
+                'shpgnr':shpgnr,
+                'qmlgnr':qmlgnr
+                }
 
     def luftbild(self):
         """Path to ortho image"""
-        return self.json['luftbild']
+        return self.json['luftbild']['pfad']
+
+    def luftbild_lyrname(self):
+        """Path to ortho image"""
+        return self.json['luftbild']['lyrname']
 
     def textinfo_layout(self):
         """Composer layout for statistical textinfo"""

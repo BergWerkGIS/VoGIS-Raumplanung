@@ -297,11 +297,11 @@ class VoGISRaumplanungPlotDialog(QDialog):
             QgsMessageLog.logMessage('__add_dkm_layers: {0}'.format(dkmgem['qmlgnr']), DLG_CAPTION)
             QgsMessageLog.logMessage('__add_dkm_layers: {0}'.format(dkmgem['shpgstk']), DLG_CAPTION)
             QgsMessageLog.logMessage('__add_dkm_layers: {0}'.format(dkmgem['qmlgstk']), DLG_CAPTION)
-        lyr = QgsVectorLayer(dkmgem['shpgstk'], 'DKM', 'ogr')
+        lyr = QgsVectorLayer(dkmgem['shpgstk'], dkmgem['lyrnamegstk'], 'ogr')
         lyr.loadNamedStyle(dkmgem['qmlgstk'])
         QgsMapLayerRegistry.instance().addMapLayer(lyr)
         self.dkm_coverage_layer = lyr
-        lyr = QgsVectorLayer(dkmgem['shpgnr'], 'DKM GNR', 'ogr')
+        lyr = QgsVectorLayer(dkmgem['shpgnr'], dkmgem['lyrnamegnr'], 'ogr')
         lyr.loadNamedStyle(dkmgem['qmlgnr'])
         QgsMapLayerRegistry.instance().addMapLayer(lyr)
 

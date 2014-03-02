@@ -66,9 +66,10 @@ class VRPPrintComposer:
         self.comp_textinfo = None
         self.template_qpt = templateqpt
         self.pdf_map = pdfmap
-        self.lyrname_ortho = 'Luftbild'
-        self.lyrname_dkm_gst = 'DKM'
-        self.lyrname_dkm_gnr = 'DKM GNR'
+        dkmgem = self.settings.dkm_gemeinde(gemname)
+        self.lyrname_ortho = self.settings.luftbild_lyrname()
+        self.lyrname_dkm_gst = dkmgem['lyrnamegstk']
+        self.lyrname_dkm_gnr = dkmgem['lyrnamegnr']
         self.comp_leg = []
         self.comp_lbl = []
         self.statistics = OrderedDict()
@@ -161,7 +162,7 @@ class VRPPrintComposer:
             self.comp_lbl = self.__get_items(QgsComposerLabel)
 
 
-            self.__update_composer_items('DKM')
+            self.__update_composer_items(self.settings.dkm_gemeinde(self.gem_name)['lyrnamegstk'])
 
             printer = QPrinter()
             printer.setOutputFormat(QPrinter.PdfFormat)
@@ -197,7 +198,7 @@ class VRPPrintComposer:
                             if cntr > 0:
                                 printer.newPage()
                             self.__reorder_layers()
-                            self.__update_composer_items(thema.name)
+                            self.__update_composer_items(thema.name, layers=layers)
                             composition.renderPage(pdf_painter, 0)
                             QgsMapLayerRegistry.instance().removeMapLayers([lyr.id() for lyr in layers])
                             cntr += 1
@@ -213,7 +214,7 @@ class VRPPrintComposer:
                                 if cntr > 0:
                                     printer.newPage()
                                 self.__reorder_layers()
-                                self.__update_composer_items(thema.name)
+                                self.__update_composer_items(thema.name, layers=layers)
                                 composition.renderPage(pdf_painter, 0)
                                 QgsMapLayerRegistry.instance().removeMapLayers([lyr.id() for lyr in layers])
                                 cntr += 1
@@ -230,16 +231,18 @@ class VRPPrintComposer:
                         idx = 0
                         for gnr, stats in self.statistics.iteritems():
                             comma = ', ' if idx > 0 else ''
-                            str_flaechen += u'{0}{1}({2:.2f}m²)'.format(comma, gnr, stats[0].flaeche)
+                            str_flaechen += u'{0}{1} ({2:.2f}m²)'.format(comma, gnr, stats[0].flaeche)
                             idx += 1
                         lbls = self.__get_items(QgsComposerLabel, self.comp_textinfo)
                         self.__update_composer_items('', lbls, str_flaechen)
                         html = tabelle.text()
                         html += u'<table>'
-                        #html += '<tr><th></th><th>KOPFZEILE</th><th></th></tr>'
-                        #html += '<tr><td></td><td>text_flaeche</td><td></td></tr>'
+                        #gnrcnt = 0
                         for gnr, stats in self.statistics.iteritems():
+                            #if gnrcnt > 0:
+                            #    html += u'<tr class="abstand"><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>'
                             html += u'<tr><th class="gnr"></th><th class="gnr">{0}</th><th class="gnr"></th></tr>'.format(gnr)
+                            #html += u'<tr class="abstand"><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>'
                             curr_thema = ''
                             for stat in stats:
                                 if stat.thema != curr_thema:
@@ -254,6 +257,7 @@ class VRPPrintComposer:
                                             attr_val += u'{0}<br />'.format(text)
                                             attr_area += u'{0:.2f}m² <br />'.format(area)
                                         html += u'<td class="col2">{0}</td><td class="col3">{1}</td></tr>'.format(attr_val, attr_area)
+                            #gnrcnt += 1
                         html += u'</table>'
                         tabelle.setText(html)
                         printer.newPage()
@@ -366,11 +370,31 @@ class VRPPrintComposer:
                         return subthema
         return None
 
-    def __update_composer_items(self, oberthema, labels=None, gnrflaeche=None):
+    def __update_composer_items(self, oberthema, labels=None, gnrflaeche=None, layers=None):
         if labels is None:
             labels = self.comp_lbl
         for leg in self.comp_leg:
+            #if not layers is None:
+                #leg_model = leg.model()
+#                QgsMessageLog.logMessage(u'layerSet:{0}'.format(leg.composerMap().layerSet()), DLG_CAPTION)
+#                for lyr in layers:
+#                    QgsMessageLog.logMessage(u'LYR(ID):{0}'.format(lyr.id()), DLG_CAPTION)
+#                    leg_model.removeLayer(lyr.id())
+                #QgsMessageLog.logMessage(u'maprenderer layerSet:{0}'.format(self.map_renderer.layerSet()), DLG_CAPTION)
+                #QgsMessageLog.logMessage(u'legmodel:{0}'.format(dir(leg_model)), DLG_CAPTION)
+                #leg_model.setLayerSet([lyr.id() for lyr in layers])
+                #for lyr in layers:
+                #    leg_model.addLayer(lyr)
             leg.updateLegend()
+            if not layers is None:
+                lyr_names = [lyr.name() for lyr in layers]
+                leg_model = leg.model()
+                row_count = leg_model.rowCount() - 1
+                for idx in xrange(row_count, -1, -1):
+                    leg_row = leg_model.item(idx)
+                    if not leg_row.text() in lyr_names:
+                        leg_model.removeRow(idx)
+                leg.adjustBoxSize()
         for lbl in labels:
             txt = lbl[1].replace('[Gemeindename]', self.gem_name)
             txt = txt.replace('[Oberthema]', oberthema)
