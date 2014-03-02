@@ -19,6 +19,7 @@ from PyQt4.QtGui import QPrinter
 from PyQt4.QtGui import QPainter
 from PyQt4.QtGui import QTreeWidget
 #import processing
+from qgis.core import QgsComposerMap
 from qgis.core import QgsComposerLabel
 from qgis.core import QgsComposerLegend
 from qgis.core import QgsComposition
@@ -131,7 +132,10 @@ class VRPPrintComposer:
 
             new_ext = bbox
             if QGis.QGIS_VERSION_INT > 20200:
-                compmap = composition.getComposerMapById(0)
+                compmaps = self.__get_items(QgsComposerMap)
+                if len(compmaps) < 1:
+                    return u'Kein Kartenfenster im Layout vorhanden!'
+                compmap = compmaps[0]
             else:
                 compmap = composition.composerMapItems()[0]
             #taken from QgsComposerMap::setNewAtlasFeatureExtent (not yet available in QGIS 2.0)
