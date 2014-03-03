@@ -184,14 +184,15 @@ class VoGISRaumplanungPlotDialog(QDialog):
                     if not quelle.qml is None:
                         quelle.qml = quelle.qml.replace('{gem_name}', self.curr_gem_name)
                         if path.isfile(quelle.qml) is False: errors.append(quelle.qml)
-            for subthema in subthemen:
-                if not subthema.quellen is None and len(subthema.quellen) > 0:
-                    for quelle in subthema.quellen:
-                        quelle.pfad = quelle.pfad.replace('{gem_name}', self.curr_gem_name)
-                        if path.isfile(quelle.pfad) is False: errors.append(quelle.pfad)
-                        if not quelle.qml is None:
-                            quelle.qml = quelle.qml.replace('{gem_name}', self.curr_gem_name)
-                            if path.isfile(quelle.qml) is False: errors.append(quelle.qml)
+            if not subthemen is None:
+                for subthema in subthemen:
+                    if not subthema.quellen is None and len(subthema.quellen) > 0:
+                        for quelle in subthema.quellen:
+                            quelle.pfad = quelle.pfad.replace('{gem_name}', self.curr_gem_name)
+                            if path.isfile(quelle.pfad) is False: errors.append(quelle.pfad)
+                            if not quelle.qml is None:
+                                quelle.qml = quelle.qml.replace('{gem_name}', self.curr_gem_name)
+                                if path.isfile(quelle.qml) is False: errors.append(quelle.qml)
         if len(errors) > 0:
             msg = u'Diese Datenquellen sind ungültig:\n\n ' + u'\n'.join(errors)
             QMessageBox.warning(self.iface.mainWindow(), DLG_CAPTION, msg)

@@ -10,6 +10,13 @@ Works with 2.0 and 2.2.
 
 [Amt der Vorarlberger Landesregierung, Landesamt für Raumplanung und Baurecht.](http://www.vorarlberg.at/vorarlberg/bauen_wohnen/bauen/raumplanungundbaurecht/start.htm)
 
+##Known issue
+When scrolling through the parcel ids using the scrollbar the list jumps to the top after checking an id.
+
+When using the mouse wheel for scrolling this strange behaviour does not occur.
+
+**Any hints on why this happens or how to make the QListWidget behave correctly are highly appreciated!**
+
 ##Prerequisites
 This plugin was developed for special needs and data structures. It cannot be used without these out of the box.
 

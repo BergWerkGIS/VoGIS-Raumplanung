@@ -62,6 +62,22 @@
     "themen":[
         {
             "name":"",
+            "quellen":[
+                {
+                    "name":"",
+                    "pfad":"",
+                    "qml":"",
+                    "statistik":true,
+                    "filter":"",
+                    "attribut":"",
+                    "text":{
+                        "":"",
+                        "":""
+                    }
+                }
+            ]
+        },{
+            "name":"",
             "subthemen":[
                 {
                     "name":"",
