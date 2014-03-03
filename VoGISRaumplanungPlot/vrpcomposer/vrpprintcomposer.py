@@ -201,6 +201,7 @@ class VRPPrintComposer:
                     if VRP_DEBUG is True: QgsMessageLog.logMessage('drucke Thema:{0}'.format(thema.name), DLG_CAPTION)
                     if sub_themen is None:
                         layers = self.__add_layers(thema)
+                        self.__calculate_statistics(thema, thema, layers)
                         #no qml -> not visible -> means no map
                         if self.__at_least_one_visible(layers) is True:
                             if cntr > 0:
