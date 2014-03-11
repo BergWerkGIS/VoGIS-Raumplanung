@@ -157,8 +157,8 @@ class VRPPrintComposer:
             if VRP_DEBUG is True: QgsMessageLog.logMessage(u'bbox old:{0}'.format(compmap.extent().toString()), DLG_CAPTION)
             compmap.setNewExtent(new_ext)
             if VRP_DEBUG is True: QgsMessageLog.logMessage(u'bbox new:{0}'.format(compmap.extent().toString()), DLG_CAPTION)
-            #round up to next 100
-            compmap.setNewScale(math.ceil((compmap.scale()/100.0)) * 100.0)
+            #round up to next 1000
+            compmap.setNewScale(math.ceil((compmap.scale()/1000.0)) * 1000.0)
             if VRP_DEBUG is True: QgsMessageLog.logMessage(u'bbox new (after scale):{0}'.format(compmap.extent().toString()), DLG_CAPTION)
 
             #add ORTHO after new extent -> performance
@@ -223,7 +223,7 @@ class VRPPrintComposer:
                                 if cntr > 0:
                                     printer.newPage()
                                 self.__reorder_layers()
-                                self.__update_composer_items(thema.name, layers=layers)
+                                self.__update_composer_items(thema.name, subthema=sub_thema.name, layers=layers)
                                 composition.renderPage(pdf_painter, 0)
                                 QgsMapLayerRegistry.instance().removeMapLayers([lyr.id() for lyr in layers])
                                 cntr += 1
@@ -243,7 +243,7 @@ class VRPPrintComposer:
                             str_flaechen += u'{0}{1} ({2:.2f}m²)'.format(comma, gnr, stats[0].flaeche)
                             idx += 1
                         lbls = self.__get_items(QgsComposerLabel, self.comp_textinfo)
-                        self.__update_composer_items('', lbls, str_flaechen)
+                        self.__update_composer_items('', labels=lbls, gnrflaeche=str_flaechen)
                         html = tabelle.text()
                         html += u'<table>'
                         #gnrcnt = 0
@@ -379,7 +379,7 @@ class VRPPrintComposer:
                         return subthema
         return None
 
-    def __update_composer_items(self, oberthema, labels=None, gnrflaeche=None, layers=None):
+    def __update_composer_items(self, oberthema, subthema=None, labels=None, gnrflaeche=None, layers=None):
         if labels is None:
             labels = self.comp_lbl
         for leg in self.comp_leg:
@@ -407,6 +407,8 @@ class VRPPrintComposer:
         for lbl in labels:
             txt = lbl[1].replace('[Gemeindename]', self.gem_name)
             txt = txt.replace('[Oberthema]', oberthema)
+            if not subthema is None:
+                txt = txt.replace('[Subthema]', subthema)
             txt = txt.replace('[GNR]', ', '.join(self.gnrs))
             if not gnrflaeche is None:
                 txt = txt.replace('[GNRFLAECHE]', gnrflaeche)
@@ -564,8 +566,10 @@ class VRPPrintComposer:
             filename = self.template_qpt
         if VRP_DEBUG is True: QgsMessageLog.logMessage(u'reading template: {0}'.format(filename), DLG_CAPTION)
         xml_file = QFile(filename)
+        #if xml_file.exists() is False:
+        #    return u'\nTemplate ist nicht vorhanden!\n\n{0}'.format(self.template_qpt), None
         if xml_file.open(QIODevice.ReadOnly) is False:
-            return u'Konnte Template nicht öffnen!\n{0}'.format(self.template_qpt), None
+            return u'\nKonnte Template nicht öffnen!\n\n{0}\n\n{1}: {2}'.format(filename, xml_file.error(), xml_file.errorString()), None
         xml_doc = QDomDocument('mydoc')
         xml_doc.setContent(xml_file)
         return None, xml_doc

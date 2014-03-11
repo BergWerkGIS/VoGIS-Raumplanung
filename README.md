@@ -1,8 +1,8 @@
 #VoGIS-Raumplanung Plot
 
-QGIS PlugIn to create plots from cadastral data.
+QGIS PlugIn to create plots of cadastral data.
 
-Works with 2.0 and 2.2.
+Tested with 2.0 and 2.2.
 
 [Demo output.](/settings-and-output/out.pdf)
 
@@ -26,7 +26,7 @@ Data/settings needed:
 * writeable path to save cached community names
 * ortho/satellite image
 * shapefiles with cadastral data
-* composer layouts
+* [composer layouts](#layouts)
 
 ##Releases
 [Download latest release](https://github.com/BergWerkGIS/VoGIS-Raumplanung/releases).
