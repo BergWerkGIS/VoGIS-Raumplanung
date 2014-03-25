@@ -180,6 +180,9 @@ class VRPPrintComposer:
 
             self.__update_composer_items(self.settings.dkm_gemeinde(self.gem_name)['lyrnamegstk'])
 
+            if VRP_DEBUG is True:
+                QgsMessageLog.logMessage(u'paperWidth:{0} paperHeight:{1}'.format(composition.paperWidth(), composition.paperHeight()), DLG_CAPTION)
+
             printer = QPrinter()
             printer.setOutputFormat(QPrinter.PdfFormat)
             printer.setOutputFileName(self.pdf_map)
@@ -240,6 +243,7 @@ class VRPPrintComposer:
                                 QgsMapLayerRegistry.instance().removeMapLayers([lyr.id() for lyr in layers])
             #output statistics
             if len(self.statistics) > 0:
+                printer.setPaperSize(QSizeF(210, 297), QPrinter.Millimeter)
                 tabelle = self.__get_item_byid(self.comp_textinfo, 'TABELLE')
                 if tabelle is None:
                     self.iface.messageBar().pushMessage(u'Layout (Textinfo): Kein Textelement mit ID "TABELLE" vorhanden.', QgsMessageBar.CRITICAL)
@@ -426,7 +430,7 @@ class VRPPrintComposer:
             lbl[0].setText(txt)
         #self.composermap.updateItem()
         #self.composermap.updateCachedImage()
-        self.composermap.mapRenderer().updateFullExtent ()
+        #self.composermap.mapRenderer().updateFullExtent ()
 
 
     def __get_items(self, typ, composition=None):
