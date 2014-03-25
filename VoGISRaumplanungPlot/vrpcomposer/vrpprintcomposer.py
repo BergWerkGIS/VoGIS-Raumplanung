@@ -28,6 +28,7 @@ from qgis.core import QgsExpression
 from qgis.core import QgsFeatureRequest
 from qgis.core import QgsMapLayerRegistry
 from qgis.core import QgsMessageLog
+from qgis.core import QgsPaintEngineHack
 from qgis.core import QgsRasterLayer
 from qgis.core import QgsVectorLayer
 from qgis.gui import QgsMessageBar
@@ -65,6 +66,7 @@ class VRPPrintComposer:
         self.ortho_lyr = None
         self.themen = themen
         self.composition = None
+        self.composermap = None
         self.comp_textinfo = None
         self.template_qpt = templateqpt
         self.pdf_map = pdfmap
@@ -138,7 +140,13 @@ class VRPPrintComposer:
                     return u'Kein Kartenfenster im Layout vorhanden!'
                 compmap = compmaps[0]
             else:
+                if len(composition.composerMapItems()) < 1:
+                    return u'Kein Kartenfenster im Layout vorhanden!'
                 compmap = composition.composerMapItems()[0]
+
+            self.composermap = compmap
+            #self.composermap.setPreviewMode(QgsComposerMap.Render)
+            #self.composermap.setPreviewMode(QgsComposerMap.Rectangle)
             #taken from QgsComposerMap::setNewAtlasFeatureExtent (not yet available in QGIS 2.0)
             #http://www.qgis.org/api/qgscomposermap_8cpp_source.html#l00610
             old_ratio = compmap.rect().width() / compmap.rect().height()
@@ -183,6 +191,7 @@ class VRPPrintComposer:
             pdf_painter = QPainter(printer)
             paper_rect_pixel = printer.pageRect(QPrinter.DevicePixel)
             paper_rect_mm = printer.pageRect(QPrinter.Millimeter)
+            QgsPaintEngineHack.fixEngineFlags(printer.paintEngine())
             #DKM only
             if len(self.themen) < 1:
                 composition.render(pdf_painter, paper_rect_pixel, paper_rect_mm)
@@ -415,6 +424,10 @@ class VRPPrintComposer:
             txt = txt.replace('[TODAY]', strftime("%d.%m.%Y"))
             txt = txt.replace('[DATE]', self.settings.dkm_stand())
             lbl[0].setText(txt)
+        #self.composermap.updateItem()
+        #self.composermap.updateCachedImage()
+        self.composermap.mapRenderer().updateFullExtent ()
+
 
     def __get_items(self, typ, composition=None):
         if composition is None:
